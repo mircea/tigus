@@ -1,0 +1,12 @@
+# Java compilation classes
+*.class
+*/lib/*
+
+# Eclipse workspace
+/.metadata
+
+# File system
+*~
+.DS_Store
+/temp-*
+
