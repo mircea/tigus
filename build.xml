@@ -20,4 +20,48 @@
 		<delete dir="doc"/>
 	</target>
 
+<!-- checkstyle-*.jar -->
+
+	<property name="ver-checkstyle" value="4.4" />
+	<property name="lib-checkstyle" value="checkstyle-all-${ver-checkstyle}.jar" />
+
+	<target name="check-lib-checkstyle">
+		<condition property="lib-checkstyle-available">
+			<and>
+				<available file="temp-checkstyle/${lib-checkstyle}" />
+			</and>
+		</condition>
+	</target>
+	
+	<target name="get-lib-checkstyle" depends="check-lib-checkstyle" unless="lib-checkstyle-available">
+		<echo message="CheckStyle jar not available. Downloading...." />
+		<mkdir dir="temp-checkstyle" />
+		<mkdir dir="temp-checkstyle/temp" />
+		<get src="http://downloads.sourceforge.net/checkstyle/checkstyle-${ver-checkstyle}.zip" dest="temp-checkstyle/temp/checkstyle-${ver-checkstyle}.zip" verbose="true" />
+		<unzip src="temp-checkstyle/temp/checkstyle-${ver-checkstyle}.zip" dest="temp-checkstyle/temp">
+		    <patternset>
+		        <include name="checkstyle-${ver-checkstyle}/${lib-checkstyle}"/>
+		    	<include name="checkstyle-${ver-checkstyle}/sun_checks.xml" />
+		    </patternset>
+		</unzip>
+		<move todir="temp-checkstyle/">
+			<fileset dir="temp-checkstyle/temp/checkstyle-${ver-checkstyle}">
+				<include name="**/*"/>
+			</fileset>
+		</move>
+		<delete dir="temp-checkstyle/temp" />
+	</target>
+<!-- end checkstyle-*.jar -->
+	
+	<taskdef resource="checkstyletask.properties"
+		classpath="temp-checkstyle/checkstyle-all-4.4.jar"/>
+		
+	<target name="check-coding-style" depends="get-lib-checkstyle">
+		<checkstyle config="common/style/tigus-coding-style.xml">
+			<fileset dir="${toString:project.dirs}" includes="**/*.java" />
+			<formatter type="plain"/>
+		</checkstyle>
+	</target>
+
+
 </project>
