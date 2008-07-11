@@ -1,0 +1,23 @@
+<project name="tigus">
+	
+	<path id="project.dirs">
+		<pathelement location="common/src"/>
+	</path>
+	
+	<target name="doc">
+		<javadoc
+			destdir="doc"
+			packagenames="org.tigus.*"
+			sourcepathref="project.dirs">
+			
+			<doctitle><![CDATA[<h1>Tigus Project</h1>]]></doctitle>
+			<bottom><![CDATA[<a href="http://tigus.org/" />http://tigus.org</a>]]></bottom>	    
+		
+		</javadoc>
+	</target>
+	
+	<target name="clean">
+		<delete dir="doc"/>
+	</target>
+
+</project>

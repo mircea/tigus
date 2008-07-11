@@ -2,6 +2,9 @@
 *.class
 */lib/*
 
+# Generated documentation
+doc/*
+
 # Eclipse workspace
 /.metadata
 
