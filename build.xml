@@ -1,25 +1,62 @@
 <project name="tigus">
-	
-	<path id="project.dirs">
-		<pathelement location="common/src"/>
-	</path>
-	
-	<target name="doc">
-		<javadoc
-			destdir="doc"
-			packagenames="org.tigus.*"
-			sourcepathref="project.dirs">
-			
-			<doctitle><![CDATA[<h1>Tigus Project</h1>]]></doctitle>
-			<bottom><![CDATA[<a href="http://tigus.org/" />http://tigus.org</a>]]></bottom>	    
-		
-		</javadoc>
-	</target>
-	
-	<target name="clean">
-		<delete dir="doc"/>
-	</target>
+    
+    <!-- configuration -->
+    <dirset id="project.dirs" dir="." >
+        <include name="common"/>
+    </dirset>
+    <!-- end of configuration -->
+    
+    <path id="project.paths">
+        <dirset refid="project.dirs" />
+    </path>
+    
+    <pathconvert property="project.src.paths" refid="project.dirs">
+        <chainedmapper>
+            <regexpmapper from="(.*)" to="\1${file.separator}src" />
+        </chainedmapper>
+    </pathconvert>
+    
+    <pathconvert property="project.src.filters" refid="project.dirs" pathsep=",">
+        <chainedmapper>
+            <regexpmapper from="(${basedir}${file.separator})(.*)" to="\2${file.separator}src${file.separator}\*\*${file.separator}\*.java" />
+        </chainedmapper>
+    </pathconvert>
 
+    <macrodef name="iterate">
+        <attribute name="target" default="none"/>
+        <sequential>
+            <subant target="@{target}">
+                <dirset refid="project.dirs" />
+            </subant>
+        </sequential>
+    </macrodef>
+    
+    <target name="build">
+        <subant>
+            <dirset refid="project.dirs" />
+            <target name="build"/>
+        </subant>
+    </target>
+    
+    <target name="clean">
+        <delete dir="doc"/>
+        <iterate target="clean"/>
+    </target>
+    
+    <target name="doc">
+    	<javadoc
+            destdir="doc"
+            packagenames="org.tigus.*"
+            sourcepath="${project.src.paths}">
+            <doctitle>
+                <![CDATA[<h1>Tigus Project</h1>]]>
+            </doctitle>
+            <bottom>
+                <![CDATA[<a href="http://tigus.org/" />http://tigus.org</a>]]>
+            </bottom>
+        </javadoc>
+    </target>
+    
 <!-- checkstyle-*.jar -->
 
 	<property name="ver-checkstyle" value="4.4" />
@@ -55,13 +92,15 @@
 	
 	<taskdef resource="checkstyletask.properties"
 		classpath="temp-checkstyle/checkstyle-all-4.4.jar"/>
-		
-	<target name="check-coding-style" depends="get-lib-checkstyle">
-		<checkstyle config="common/style/tigus-coding-style.xml">
-			<fileset dir="${toString:project.dirs}" includes="**/*.java" />
-			<formatter type="plain"/>
-		</checkstyle>
-	</target>
-
-
+    
+    <target name="check-coding-style" depends="get-lib-checkstyle">
+        <echo message="hello ${project.src.filters}" />
+        <checkstyle config="common/style/tigus-coding-style.xml">
+            <fileset dir=".">
+                <patternset includes="${project.src.filters}" />
+            </fileset>
+            <formatter type="plain" />
+        </checkstyle>
+    </target>
+    
 </project>
