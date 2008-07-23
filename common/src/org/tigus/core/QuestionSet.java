@@ -86,6 +86,7 @@ class QuestionSetConverter implements Converter {
     public void marshal(Object value, HierarchicalStreamWriter writer,
             MarshallingContext context) {
         QuestionSet qset = (QuestionSet) value;
+        writer.addAttribute("version", QuestionSet.getVersion());
         for (Question q: qset) {
             writer.startNode("question");
             context.convertAnother(q);
@@ -96,6 +97,10 @@ class QuestionSetConverter implements Converter {
     public Object unmarshal(HierarchicalStreamReader reader,
             UnmarshallingContext context) {
         QuestionSet qset = new QuestionSet();
+        String ver = reader.getAttribute("version");
+        if ( ! QuestionSet.getVersion().equals(ver) ) {
+            return null;
+        }
         while (reader.hasMoreChildren()) {
             reader.moveDown();
             Question q = (Question)
@@ -112,12 +117,22 @@ public class QuestionSet extends TreeSet<Question> {
 
     private static final long serialVersionUID = -8764732912877541072L;
 
-    public static XStream getXstream() {
-        return xstream;
-    }
+    /**
+     * version string
+     * 
+     * version string should be in the format "major.minor[-text]"
+     * where:
+     *  - "major" version number changes only when breaking compatibility
+     *  - "minor" version number changes only when new features are added
+     *  - "-text" is optional and might be an intermediate state
+     */
+    private static final String version = "0.1";
 
-    public static void setXstream(XStream xstream) {
-        QuestionSet.xstream = xstream;
+    /**
+     * @return the version
+     */
+    public static String getVersion() {
+        return version;
     }
 
     private static XStream xstream = null;
