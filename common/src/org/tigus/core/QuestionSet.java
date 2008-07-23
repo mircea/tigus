@@ -1,6 +1,7 @@
 package org.tigus.core;
 
 import java.util.List;
+import java.util.TreeSet;
 import java.util.Vector;
 
 import com.thoughtworks.xstream.XStream;
@@ -65,8 +66,8 @@ class TagsConverter implements Converter {
         while (reader.hasMoreChildren()) {
             reader.moveDown();
             String tag = reader.getAttribute("name");
-            Vector<String> v = (Vector<String>) context.convertAnother(tags,
-                    Vector.class);
+            Vector<String> v = (Vector<String>)
+                    context.convertAnother(tags, Vector.class);
             tags.put(tag, v);
             reader.moveUp();
         }
@@ -85,29 +86,31 @@ class QuestionSetConverter implements Converter {
     public void marshal(Object value, HierarchicalStreamWriter writer,
             MarshallingContext context) {
         QuestionSet qset = (QuestionSet) value;
-        context.convertAnother(qset.getList());
+        for (Question q: qset) {
+            writer.startNode("question");
+            context.convertAnother(q);
+            writer.endNode();
+        }
     }
 
-    @SuppressWarnings("unchecked")
     public Object unmarshal(HierarchicalStreamReader reader,
             UnmarshallingContext context) {
         QuestionSet qset = new QuestionSet();
-        qset.setList((Vector<Question>) context.convertAnother(qset,
-                Vector.class));
+        while (reader.hasMoreChildren()) {
+            reader.moveDown();
+            Question q = (Question)
+                    context.convertAnother(qset, Question.class);
+            qset.add(q);
+            reader.moveUp();
+        }
         return qset;
     }
 
 }
 
-public class QuestionSet {
+public class QuestionSet extends TreeSet<Question> {
 
-    public List<Question> getList() {
-        return list;
-    }
-
-    public void setList(List<Question> list) {
-        this.list = list;
-    }
+    private static final long serialVersionUID = -8764732912877541072L;
 
     public static XStream getXstream() {
         return xstream;
@@ -117,7 +120,6 @@ public class QuestionSet {
         QuestionSet.xstream = xstream;
     }
 
-    private List<Question> list;
     private static XStream xstream = null;
 
     private static void init() {
@@ -141,19 +143,20 @@ public class QuestionSet {
     }
 
     public QuestionSet(List<Question> list) {
+        super(list);
         init();
-        this.list = list;
     }
 
     public QuestionSet() {
+        super();
         init();
-        this.list = new Vector<Question>();
     }
 
     public QuestionSet(String xml) {
+        super();
         init();
         QuestionSet qset = QuestionSet.fromXML(xml);
-        this.list = qset.list;
+        this.addAll(qset);
     }
 
     public String toXML() {

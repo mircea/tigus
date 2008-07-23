@@ -13,16 +13,16 @@ public class Question {
     private String id;
 
     private String text;
-    private List<Answer> answers;
+    private Vector<Answer> answers;
     private TagSet tags;
-    private List<Review> reviews;
+    private Vector<Review> reviews;
 
     public List<Answer> getAnswers() {
         return answers;
     }
 
     public void setAnswers(List<Answer> answers) {
-        this.answers = answers;
+        this.answers = new Vector<Answer>(answers);
     }
 
     public TagSet getTags() {
