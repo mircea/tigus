@@ -1,8 +1,18 @@
 package org.tigus.core;
 
-import java.util.List;
+import java.io.BufferedInputStream;
+import java.io.BufferedOutputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.util.Collection;
+import java.util.Enumeration;
 import java.util.TreeSet;
 import java.util.Vector;
+import java.util.zip.CRC32;
+import java.util.zip.CheckedOutputStream;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipFile;
+import java.util.zip.ZipOutputStream;
 
 import com.thoughtworks.xstream.XStream;
 import com.thoughtworks.xstream.converters.Converter;
@@ -157,29 +167,78 @@ public class QuestionSet extends TreeSet<Question> {
         xstream.registerConverter(new QuestionSetConverter());
     }
 
-    public QuestionSet(List<Question> list) {
-        super(list);
-        init();
-    }
-
     public QuestionSet() {
         super();
         init();
     }
-
-    public QuestionSet(String xml) {
+    
+    public QuestionSet(String fileName) throws IOException {
         super();
         init();
-        QuestionSet qset = QuestionSet.fromXML(xml);
-        this.addAll(qset);
+        loadFromFile(fileName);
     }
 
+    public QuestionSet(Collection<Question> c) {
+        super(c);
+        init();
+    }
+    
+    /**
+     * Function for describing the QuestionSet in an XML String
+     * @return XML string
+     */
     public String toXML() {
         return xstream.toXML(this);
     }
 
-    private static QuestionSet fromXML(String xml) {
+    /**
+     * Static function for creating a QuestionSet from an XML string
+     * @param xml input string
+     * @return the generated QuestionSet
+     */
+    public static QuestionSet createFromXML(String xml) {
         init();
         return (QuestionSet) xstream.fromXML(xml);
     }
+    
+    /**
+     * Function for loading a QuestionSet from a file
+     * @param fileName where the QuestionSet is located
+     * @throws IOException
+     */
+    public void loadFromFile(String fileName) throws IOException {
+        BufferedInputStream is = null;
+        ZipEntry entry;
+        ZipFile zipfile = new ZipFile(fileName);
+        Enumeration< ? extends ZipEntry> e = zipfile.entries();
+        while (e.hasMoreElements()) {
+            // iterate over the files in the archive
+            entry = (ZipEntry) e.nextElement();
+            if (entry.getName().equals("questions.xml")) {
+                // create an input stream with the file
+                is = new BufferedInputStream(zipfile.getInputStream(entry));
+                // extract the question set from the XML file
+                QuestionSet qset = (QuestionSet) xstream.fromXML(is);
+                this.addAll(qset);
+                is.close();
+            }
+        }
+    }
+    
+    /**
+     * Function for saving a QuestionSet to a file
+     * @param fileName where the QuestionSet will be saved
+     * @throws IOException
+     */
+    public void saveToFile(String fileName) throws IOException {
+        FileOutputStream dest = new FileOutputStream(fileName);
+        CheckedOutputStream checksum = new CheckedOutputStream(dest, new CRC32());
+        ZipOutputStream out =
+            new ZipOutputStream(new BufferedOutputStream(checksum));
+        ZipEntry entry = new ZipEntry("questions.xml");
+        out.putNextEntry(entry);
+        out.write(xstream.toXML(this).getBytes());
+        out.close();
+    }
+
 }
