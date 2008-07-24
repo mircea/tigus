@@ -1,0 +1,27 @@
+ <project name="tigus" default="build">  
+ 	
+
+ 	<path id="common.classpath">
+ 			<pathelement location="../common/bin" />
+ 			<pathelement location="../common/lib/xstream-1.3.jar" />
+    </path>
+	<property name="src" value="src"/>
+	<property name="bin" value="bin"/>
+ 	
+	<target name="init"> 
+	    <mkdir dir="${bin}"/>
+	</target>
+
+	<target name="build" depends="init"> 
+	     <javac srcdir="${src}" destdir="${bin}">
+		 	<classpath refid="common.classpath" />
+	     </javac>
+	</target>
+		
+	<target name="Clean" description="Removes previous build">
+	  <delete verbose="true">
+	    <fileset dir="${bin}"/>
+	  </delete>
+	</target>
+ 	
+</project>
