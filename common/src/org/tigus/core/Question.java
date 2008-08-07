@@ -21,24 +21,8 @@ public class Question {
         return answers;
     }
 
-    public void setAnswers(List<Answer> answers) {
-        this.answers = new Vector<Answer>(answers);
-    }
-
-    public TagSet getTags() {
-        return tags;
-    }
-
-    public void setTags(TagSet tags) {
-        this.tags = tags;
-    }
-
     public List<Review> getReviews() {
         return reviews;
-    }
-
-    public void setReviews(Vector<Review> reviews) {
-        this.reviews = reviews;
     }
 
     public String getId() {
@@ -51,6 +35,10 @@ public class Question {
 
     public String getText() {
         return text;
+    }
+    
+    public void setText(String text) {
+        this.text = text;
     }
 
     public Question() {
@@ -75,21 +63,25 @@ public class Question {
         }
     }
 
-    public void setText(String text) {
-        this.text = text;
-    }
-
     public void addAnswer(boolean correct, String text) {
         answers.add(new Answer(correct, text));
     }
 
-    public void setTag(String name, String value) {
+    public TagSet getTags() {
+        return tags;
+    }
+    
+    public List<String> removeTag(String name){
+        return tags.remove(name);
+    }
+    
+    public void setTagValue(String name, String value) {
         List<String> values = new Vector<String>();
         values.add(value);
         tags.put(name, values);
     }
-
-    public void setTag(String name, List<String> value) {
+    
+    public void setTagValue(String name, List<String> value) {
         tags.put(name, value);
     }
 
