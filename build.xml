@@ -2,7 +2,11 @@
     
     <!-- configuration -->
     <dirset id="project.dirs" dir="." >
-        <include name="common"/>
+        <include name="common" />
+        <include name="conversion" />
+        <include name="storage" />
+        <include name="app-editor" />
+        <include name="app-converter" />
     </dirset>
     <!-- end of configuration -->
     
