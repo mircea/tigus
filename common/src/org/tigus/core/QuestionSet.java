@@ -6,7 +6,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.Collection;
 import java.util.Enumeration;
-import java.util.TreeSet;
+import java.util.HashSet;
 import java.util.Vector;
 import java.util.zip.CRC32;
 import java.util.zip.CheckedOutputStream;
@@ -123,7 +123,7 @@ class QuestionSetConverter implements Converter {
 
 }
 
-public class QuestionSet extends TreeSet<Question> {
+public class QuestionSet extends HashSet<Question> {
 
     private static final long serialVersionUID = -8764732912877541072L;
 
