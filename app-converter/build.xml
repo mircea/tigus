@@ -4,6 +4,8 @@
  	<path id="common.classpath">
  			<pathelement location="../common/bin" />
  			<pathelement location="../common/lib/xstream-1.3.jar" />
+			<pathelement location="../conversion/bin" />
+			<pathelement location="bin/" />
     </path>
 	<property name="src" value="src"/>
 	<property name="bin" value="bin"/>
@@ -17,8 +19,15 @@
 		 	<classpath refid="common.classpath" />
 	     </javac>
 	</target>
+	
+	<target name="run" description="runs the converter application">
+		<java classname="org.tigus.app.converter.QuestionConverter" fork="true">
+			<arg value="-h"/>
+			<classpath refid="common.classpath" />
+		</java>
+	</target>
 		
-	<target name="Clean" description="Removes previous build">
+	<target name="clean" description="Removes previous build">
 	  <delete verbose="true">
 	    <fileset dir="${bin}"/>
 	  </delete>

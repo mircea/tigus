@@ -7,6 +7,7 @@ import java.io.FileReader;
 import java.io.IOException;
 import org.tigus.core.Answer;
 import org.tigus.core.Question;
+import org.tigus.core.QuestionSet;
 
 public class PlainTextQuestionConverter {
 
@@ -20,20 +21,20 @@ public class PlainTextQuestionConverter {
     private static final int QUESTIONTEXTSTATE = 2;
     private static final int ANSWERSTATE = 3;
     private File inputFile;
-    // private QuestionSet qSet;
+    private QuestionSet qSet;
     private Question q;
 
     // no-question -> tags -> question-text -> answers -> begin
 
     public PlainTextQuestionConverter(File input) {
         inputFile = new File(input.getPath());
-        // qSet = new QuestionSet();
+        qSet = new QuestionSet();
         q = new Question();
     }
 
     public PlainTextQuestionConverter(String path) {
         inputFile = new File(path);
-        // qSet = new QuestionSet();
+        qSet = new QuestionSet();
         q = new Question();
     }
 
@@ -47,10 +48,6 @@ public class PlainTextQuestionConverter {
             String line;
 
             state = NOQUESTIONSTATE;
-
-            //TreeSet<Question> qCollection;
-
-            //qCollection = new TreeSet<Question>();
             q = new Question();
 
             while ((line = inputBuffer.readLine()) != null) {
@@ -66,7 +63,6 @@ public class PlainTextQuestionConverter {
                 }
 
                 /*
-               
                  * if we are in tag state or in no qustion state and the line
                  * starts with '@' we have tags to parse
                  */
@@ -107,13 +103,13 @@ public class PlainTextQuestionConverter {
 
                 if ((state == ANSWERSTATE) && (line.trim().length() == 0)) {
                     state = NOQUESTIONSTATE;
-                    //qCollection.add(q);
+
                     printQuestion();
+                    qSet.add(q);
                     q = new Question();
                 }
 
             }
-            // qSet = new QuestionSet(qCollection);
 
         } catch (FileNotFoundException e) {
             e.printStackTrace();
@@ -123,9 +119,9 @@ public class PlainTextQuestionConverter {
 
     }
 
-    // public QuestionSet getQuestionSet() {
-    // return qSet;
-    // }
+    public QuestionSet getQuestionSet() {
+        return qSet;
+    }
 
     private void printQuestion() {
         // question printing function for debug purposes only

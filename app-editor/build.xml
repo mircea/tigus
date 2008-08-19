@@ -4,6 +4,7 @@
  	<path id="common.classpath">
  			<pathelement location="../common/bin" />
  			<pathelement location="../common/lib/xstream-1.3.jar" />
+			<pathelement location="../conversion/bin" />
     </path>
 	<property name="src" value="src"/>
 	<property name="bin" value="bin"/>
