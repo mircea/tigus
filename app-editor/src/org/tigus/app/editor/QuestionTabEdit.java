@@ -2,84 +2,220 @@ package org.tigus.app.editor;
 
 import java.awt.Dimension;
 import java.awt.event.*;
+import java.awt.GridLayout;
 import javax.swing.event.*;
 import javax.swing.*;
 
-import java.util.Vector;
-import javax.swing.DefaultListModel;
-import org.tigus.core.Answer;
-import org.tigus.core.Question;
-import org.tigus.core.QuestionSet;
+import java.util.*;
+
+import org.tigus.core.*;
+
+/**
+ *  This class represents a tab with components that permit editing a new Question
+ * @author Adriana Draghici
+ *
+ */
 
 class QuestionTabEdit {
         
     int listIndex;
     int tabIndex;
-    Boolean isCorrect;;
-    
-    Vector <Answer> answers;
+    int correctCount;
+    Boolean isCorrect;
+    String state;
+   
     QuestionSet questionSet;
     Question question;
+    TagSet tagSet;
+    String qsName;
+   
+    Vector <Answer> answers;
     
-    /* Tab components */
+    /* Tab's components */
+    
     JTabbedPane tabbedPane;
     JTextArea questionTextArea = new JTextArea();
-    JTextArea answerTextArea = new JTextArea();     
-    JButton addButton = new JButton("New answer");
-    JButton editButton = new JButton("Edit answer");
+    JTextArea answerTextArea = new JTextArea();   
+    JTextField tagTextField = new JTextField();
+    JTextField tagValueTextField = new JTextField();
+       
+    JButton newButton = new JButton("New answer");
     JButton deleteButton = new JButton("Delete answer");
-    JButton saveButton = new JButton("Save answer");
+    JButton saveButton = new JButton("Apply");
+    JButton tagButton = new JButton("Apply");
+    JButton removeTagButton = new JButton("Remove tag");
+    
     JButton okButton = new JButton("Ok");       
     JButton cancelButton = new JButton("Cancel");
+    
+    JLabel tagValueLabel = new JLabel("");    
+    JComboBox tagsComboBox = new JComboBox();    
     JCheckBox correctCheckBox = new JCheckBox("Correct");
+    
     JScrollPane answerScrollPane = new JScrollPane(answerTextArea);
     JScrollPane questionScrollPane = new JScrollPane(questionTextArea);
     JScrollPane listScrollPane;
-    DefaultListModel listModel = new DefaultListModel();
-    JList answersList;
-    int correctCount = 0;
-    String state = "";
-    Vector <Answer> newAnswers  = new Vector<Answer>();
     
-    public QuestionTabEdit(JTabbedPane pane, Question question)//QuestionSet qs) {
-    {       
+    JPanel mainPanel;
+    Vector <String> tagsNames = new Vector<String>();
+    DefaultListModel listModel = new DefaultListModel();
+    DefaultComboBoxModel comboBoxModel = new DefaultComboBoxModel();
+    JList answersList;
+ 
+    /**
+     * Class's constructor
+     * @param pane - the JTabbedPane object in which to add the new tab
+     * @param question - the question to be edited
+     * @param qs - the QuestionSet object containing the question to be edited
+     * @param qsName - the name of the question set
+     */ 
+ 
+    
+    public QuestionTabEdit(JTabbedPane pane, Question question , 
+                            QuestionSet qs, String qsName) {
+      
         this.tabbedPane = pane;   
         this.question = question;
-        answers = new Vector<Answer>(question.getAnswers());
+        this.questionSet = qs;
+        this.qsName = qsName;
         
-        // build a list model containing the question's answer
-        String s;
-        for(int i = 0; i < answers.size(); i++){
-            if (answers.elementAt(i).isCorrect() == true){
-                s =  "correct    :";
-                correctCount++;
-            }
-            else s = "incorrect :";
-            listModel.addElement(s + answers.elementAt(i).getText());
-        }
-        // add the list model to the list component
-        answersList = new JList(listModel);
-        
-        isCorrect = false;
-        listIndex = -1;
-        
-        //this.questionSet = qs;
+        isCorrect = false; 
+        state = "ADD"; 
+        correctCount = 0;
         //initComponents();
     }
     
-    void initComponents(){      
+    /**
+     * Builds a list of the question's answers    
+     */
+    private void showAnswers() {
         
+        answers = new Vector<Answer>(question.getAnswers());
+        
+        // build a list model containing the question's answer 
+        String s;
+        for(int i = 0; i < answers.size(); i++){
+            if (answers.elementAt(i).isCorrect() == true){
+                s =  "<html><ul><li type=circle>";
+                correctCount++;
+            }
+            else s = "<html><ul><li type=disc> ";
+            listModel.addElement(s + answers.elementAt(i).getText()+"</ul></html>");
+        }
+        // add the list model to the list component
+        answersList = new JList(listModel);
+        listIndex = -1;
+    }
+    
+    
+    private void updateAnswersList(Boolean c, String text, int index) {
+        
+         if (state.equals("ADD")) {            
+            answers.addElement(new Answer(c, text));  
+            
+            String s = new String();
+            if (c){
+                s =  "<html><ul><li type=circle>";    
+            }
+            else  {
+                s = "<html><ul><li type=disc> ";
+            }
+            
+            listModel.addElement(s + text +"</ul></html>");
+         
+            answersList.setSelectedIndex(answers.size()-1);
+        }
+        
+        if (state.equals("DEL")) {            
+            answers.remove(index);                     
+            listModel.remove(index);
+            answersList.setSelectedIndex(0);
+        }
+        
+        if (state.equals("EDIT")) {            
+            answers.setElementAt(new Answer(c,text), index);
+            
+            String s = new String();
+            if (c){
+                s = "<html><ul><li type=circle> ";      
+            }
+            else  {
+                s = "<html><ul><li type=disc> ";
+            }
+            
+            listModel.setElementAt(s+text+"</ul></html>", index);
+            answersList.setSelectedIndex(index);            
+        }
+    }
+    /**
+     * Adds tags' names to the class's JComboBox object   
+     */
+    private void showTags() {
+      
+        // get tags
+        tagSet = question.getTags(); 
+        
+        Set <String> keys = tagSet.keySet();
+        
+        // insert tags' names into comboBox
        
-        questionTextArea.setText(question.getText());
+        for (Iterator <String> it = keys.iterator(); it.hasNext(); ) {           
+           String tagName = new String(it.next());
+         comboBoxModel.addElement(tagName);  
+         
+           tagsNames.addElement(tagName);        
+        }
+        tagsComboBox.setModel(comboBoxModel);
+        tagsComboBox.setEditable(false);
+        tagsComboBox.setSelectedItem(0);
+       
+        showTagValues((String)tagsComboBox.getSelectedItem());
+         
+    }
+    
+    /**
+     * Retrieves and display's the values of a given tag in class's JLabel object
+     * @param tagName - the name of the tag
+     */
+    private void showTagValues(String tagName) {
+        
+        
+        
+        // get tag's values
+        Vector <String> values = new Vector<String>(tagSet.get(tagName));
+        String text = new String();
+        text += values.elementAt(0);
+        
+        for (int i = 1; i < values.size(); i++){                    
+            text += ", ";
+            text += values.elementAt(i);
+        }
+        
+        tagValueLabel.setText(text);
+    }
+    /**
+     * Initializes the main panel's components and containers 
+     * by setting their size, their layout and their listeners.
+     * @params none
+     * @return none
+     */
+    
+    public void initComponents() {
+        
+        showAnswers();
+        showTags();
+       
+        questionTextArea.setText(question.getText());       
         
         /*
          * set components size
          */ 
         
-        addButton.setPreferredSize(new Dimension(100,25));
-        editButton.setPreferredSize(new Dimension(100,25));
+        newButton.setPreferredSize(new Dimension(100,25));
         deleteButton.setPreferredSize(new Dimension(100,25));
         saveButton.setPreferredSize(new Dimension(100,25));
+        tagButton.setPreferredSize(new Dimension(100,25));
+        removeTagButton.setPreferredSize(new Dimension(200,25));
         okButton.setPreferredSize(new Dimension(100,25));
         cancelButton.setPreferredSize(new Dimension(100,25));
         questionTextArea.setPreferredSize(new Dimension(300,100));
@@ -88,20 +224,36 @@ class QuestionTabEdit {
         
         answersList.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
         listScrollPane = new JScrollPane(answersList);
-        answersList.addListSelectionListener(new ListSelectionListener() {
-
-            public void valueChanged(ListSelectionEvent e) {
-                
-                listIndex = answersList.getSelectedIndex();
-            }
-        });
         
-        /*  
-         * set components layout
-         */
+        
+        /* set components layout */        
+        
+        mainPanel = setLayout(); 
+        
+        
+        /* add new tab */
+        
+        tabbedPane.addTab("Question", mainPanel);
+        tabIndex = tabbedPane.getTabCount() -1;
+        tabbedPane.setSelectedIndex(tabIndex); //set focus
+        
+        /* add listeners */
+        
+        addListeners();
+          
+       
+    }
+    
+    /**
+     * Places the class's GUI components into panels
+     * @params none
+     * @return JPanel object
+     */
+    private JPanel setLayout() {
         
         JPanel questionPanel = new JPanel();
         JPanel answerPanel = new JPanel();
+        JPanel tagsPanel = new JPanel();
         JPanel buttonsPanel = new JPanel();
         JPanel confirmPanel = new JPanel();
         
@@ -117,11 +269,8 @@ class QuestionTabEdit {
         questionPanel.add(listScrollPane);
         questionPanel.setBorder(BorderFactory.createTitledBorder("Text"));
         questionPanel.setLayout(new BoxLayout(questionPanel, BoxLayout.Y_AXIS));
-        
-        
-        
-        buttonsPanel.add(addButton);
-        buttonsPanel.add(editButton);
+       
+        buttonsPanel.add(newButton);
         buttonsPanel.add(deleteButton);
         buttonsPanel.setLayout(new BoxLayout(buttonsPanel, BoxLayout.X_AXIS));
         buttonsPanel.setAlignmentX(java.awt.Component.LEFT_ALIGNMENT);
@@ -134,6 +283,31 @@ class QuestionTabEdit {
         answerPanel.setLayout(new BoxLayout(answerPanel, BoxLayout.Y_AXIS));
         
         
+        JPanel gPanel = new JPanel(); 
+        gPanel.setLayout(new GridLayout(0,2));
+        
+        gPanel.add(new JLabel("Values: "));
+        gPanel.add(new JLabel("Tags: "));
+        gPanel.add(tagsComboBox);
+        gPanel.add(tagValueLabel);
+        gPanel.add(tagTextField);
+        gPanel.add(tagValueTextField);
+        gPanel.setAlignmentX(java.awt.Component.LEFT_ALIGNMENT);
+        
+        JPanel hPanel = new JPanel();
+        hPanel.add(tagButton);
+        hPanel.add(removeTagButton);
+        hPanel.setAlignmentX(java.awt.Component.LEFT_ALIGNMENT);
+        hPanel.setLayout(new BoxLayout(hPanel, BoxLayout.X_AXIS));
+        
+        tagsPanel.add(gPanel);
+        tagsPanel.add(hPanel);
+        
+        tagsPanel.setLayout(new BoxLayout(tagsPanel, BoxLayout.Y_AXIS));
+        tagsPanel.setAlignmentX(java.awt.Component.LEFT_ALIGNMENT);
+        tagsPanel.setBorder(BorderFactory.createTitledBorder("tags"));
+        
+        
         confirmPanel.add(okButton);
         confirmPanel.add(cancelButton);     
         confirmPanel.setAlignmentX(java.awt.Component.LEFT_ALIGNMENT);
@@ -141,27 +315,63 @@ class QuestionTabEdit {
         
         verticalPanel.add(questionPanel);       
         verticalPanel.add(answerPanel);
+        verticalPanel.add(tagsPanel);
         verticalPanel.add(confirmPanel);
         verticalPanel.setLayout(new BoxLayout(verticalPanel, BoxLayout.Y_AXIS));
         
+        return verticalPanel;
+    }
+    
+    /**
+     * Add listeners to the class's GUI components (buttons, checkbox)
+     * @params none
+     */
+    
+    private void addListeners() {
         
-        /* add new tab */
-        tabbedPane.addTab("Question", verticalPanel);
-        tabIndex = tabbedPane.getTabCount() -1;
-        tabbedPane.setSelectedIndex(tabIndex); //set focus
+        answersList.addListSelectionListener(new ListSelectionListener() {
+
+            public void valueChanged(ListSelectionEvent e) {
+                if (state.equals("DEL")) {
+                    answerTextArea.setText("");
+                    correctCheckBox.setSelected(false);
+                    return;
+                }
+                state = "EDIT";
+                
+                listIndex = answersList.getSelectedIndex();
+                System.out.println("index : " + listIndex);
+                String answerText = answers.elementAt(listIndex).getText();
+                
+                // sets the component's content
+                answerTextArea.setText(answerText);
+               
+                if (answers.elementAt(listIndex).isCorrect()) {
+                    correctCheckBox.setSelected(true);
+                    isCorrect = true;
+                }
+                else {                   
+                    correctCheckBox.setSelected(false);
+                    isCorrect = false;
+                }
+             
+            }
+        });
         
-        /*
-         * add listeners 
-         */
-        
-        
-        correctCheckBox.addItemListener(new ItemListener(){
-            public void itemStateChanged(ItemEvent e){
+        tagsComboBox.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent e) {
+                String tagName = (String)tagsComboBox.getSelectedItem();
+                showTagValues(tagName);                
+            }
+        });
+                
+        correctCheckBox.addItemListener(new ItemListener() {
+            public void itemStateChanged(ItemEvent e) {
                 if (e.getStateChange() == ItemEvent.SELECTED) {
                    isCorrect = true;
                   }
                 else {
-                    if (state == "editing") {
+                    if (state.equals("EDIT")) {
                         correctCount--;
                         
                     }
@@ -172,55 +382,46 @@ class QuestionTabEdit {
             
         }) ;
         
-        addButton.addActionListener(new ActionListener() { 
+        newButton.addActionListener(new ActionListener() { 
             public void actionPerformed(ActionEvent e) {
-                String answerText = answerTextArea.getText();
-                if (answerText.length() == 0) {
-                    JOptionPane.showMessageDialog(verticalPanel,
-                            "Please introduce the answer's text!", 
-                                "", JOptionPane.ERROR_MESSAGE);
-                    return;
-                }
+                state = "ADD";
                 answerTextArea.setText("");
-                correctCheckBox.setSelected(false);
-            }
-        });
-        
-        editButton.addActionListener(new ActionListener() { 
-            public void actionPerformed(ActionEvent e) {
-                if (listIndex == -1) {
-                    JOptionPane.showMessageDialog(verticalPanel,
-                            "Please select an answer!", 
-                                "", JOptionPane.ERROR_MESSAGE);
-                    return;
-                }
+                correctCheckBox.setSelected(false);     
                 
-               String answerText = answers.elementAt(listIndex).getText();
-               
-               // sets the component's content
-               answerTextArea.setText(answerText);
-               state = "editing";
-               if (answers.elementAt(listIndex).isCorrect()) {
-                   correctCheckBox.setSelected(true);
-                   isCorrect = true;
-               }
-               else {                   
-                   correctCheckBox.setSelected(false);
-                   isCorrect = false;
-               }
             }
         });
         
         deleteButton.addActionListener(new ActionListener() { 
             public void actionPerformed(ActionEvent e) {
-                               
+               state = "DEL";           
+               if (isCorrect == true)
+                   correctCount --;
+               if (listIndex == -1) {
+                   JOptionPane.showMessageDialog(mainPanel,
+                           "Please select an answer!", 
+                               "", JOptionPane.ERROR_MESSAGE);
+                   return;
+                }
+               
+               String answerText = answerTextArea.getText();
+                      
+                              
+               question.getAnswers().remove(new Answer(
+                                   answers.elementAt(listIndex).isCorrect(), answerText));
+              
+               updateAnswersList(null, null, listIndex);
+             
+               
             }
         });
+        
         saveButton.addActionListener(new ActionListener() {
            public void actionPerformed(ActionEvent e) {
+               
                String answerText = answerTextArea.getText();
+               
                if (answerText.length() == 0) {
-                   JOptionPane.showMessageDialog(verticalPanel,
+                   JOptionPane.showMessageDialog(mainPanel,
                            "The answer's text is empty!", 
                                "", JOptionPane.ERROR_MESSAGE);
                    return;
@@ -228,34 +429,105 @@ class QuestionTabEdit {
                if (isCorrect == true)
                    correctCount ++;
                if (isCorrect == true && correctCount > 1){
-                   JOptionPane.showMessageDialog(verticalPanel,
+                   JOptionPane.showMessageDialog(mainPanel,
                            "There must be only ONE correct answer!", 
                                "Error", JOptionPane.ERROR_MESSAGE);                    
                    correctCount--;
                    return;
                }
-      
-               newAnswers.add(new Answer(isCorrect, answerText));
+               if(state == "ADD") {
+                   question.addAnswer(isCorrect, answerText);
+                   updateAnswersList(isCorrect, answerText, 0);
+               }
+               if(state == "EDIT") {
+                   question.getAnswers().set(listIndex, new Answer(isCorrect, answerText));               
+                   updateAnswersList(isCorrect, answerText, listIndex);
+               }
            }
             
+        });
+        
+        tagButton.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent e) {
+                String tagName = tagTextField.getText();
+                String tagValues = tagValueTextField.getText();
+                Boolean tagExists = tagsNames.contains(tagName);
+                if (tagName.length() == 0) {
+                    JOptionPane.showMessageDialog(mainPanel,
+                         "Please insert the tag's name!", 
+                             "Error", JOptionPane.ERROR_MESSAGE);
+                    return;
+                }
+                if (tagValues.length() == 0) {
+                    JOptionPane.showMessageDialog(mainPanel,
+                            "Please insert the tag's values!", 
+                                "Error", JOptionPane.ERROR_MESSAGE);
+                       return;
+                }
+                
+                if(tagExists) {                    
+                 
+                    int value = JOptionPane.showConfirmDialog(mainPanel,
+                            "Are you sure you want to change tag's values?",
+                            "", JOptionPane.YES_NO_OPTION);
+                   
+                    if (value == JOptionPane.NO_OPTION) {
+                        return;
+                    }                     
+                    
+                    comboBoxModel.removeElement(tagName);
+                    
+                }
+                comboBoxModel.addElement(tagName);
+                question.setTagValueList(tagName, tagValues);                  
+                
+                // clear components
+                tagTextField.setText("");
+                tagValueTextField.setText("");
+            }
+            
+        });
+        
+        removeTagButton.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent e) {
+                String tagName = (String)tagsComboBox.getSelectedItem();
+                
+                int value = JOptionPane.showConfirmDialog(mainPanel,
+                        "Are you sure you want to remove " + tagName +"tag?",
+                        "", JOptionPane.YES_NO_OPTION);
+               
+                if (value == JOptionPane.NO_OPTION) {
+                    return;
+                } 
+                tagSet.remove(tagName);
+                comboBoxModel.removeElement(tagName);
+            }
         });
         
         okButton.addActionListener(new ActionListener() {
            public void actionPerformed(ActionEvent e) {
                String questionText = questionTextArea.getText();
                if (questionText.length() == 0) {
-                   JOptionPane.showMessageDialog(verticalPanel,
+                   JOptionPane.showMessageDialog(mainPanel,
                            "The question's text is empty!", 
                                "", JOptionPane.ERROR_MESSAGE);
                    return;
                }
                
-               question.setId(questionText);
-               for (int i = 0; i < newAnswers.size(); i++){
-                   question.addAnswer(newAnswers.elementAt(i).isCorrect(), 
-                                       newAnswers.elementAt(i).getText());
+               if(correctCount == 0) {
+                   JOptionPane.showMessageDialog(mainPanel,
+                           "There is no correct answer!", 
+                               "warning", JOptionPane.WARNING_MESSAGE);
                }
-                   
+               
+               question.setId(questionText);
+              
+               try {
+                   questionSet.saveToFile(qsName);
+               }catch(Exception ex) {}
+               
+               tabbedPane.removeTabAt(tabIndex);
+               
            }
         });
         
@@ -269,9 +541,9 @@ class QuestionTabEdit {
                     tabbedPane.removeTabAt(tabIndex);
                 }                   
             }
-        });        
-       
+        });
     }
+
 }
 
     

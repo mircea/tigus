@@ -47,7 +47,8 @@ public class QuestionSetTab {
         JPanel panel = new JPanel();
         JPanel qPanel = new JPanel();
         /*
-         * create panels for each question
+         * create panels for each question 
+         * !!! not yet finished, it can show correctly only a QS with one question
          */
         int qsSize = questionSet.size();
         System.out.println("question set size:" + qsSize);
@@ -125,23 +126,57 @@ public class QuestionSetTab {
                 createQuestion();
             }
         });
+        
+        editButton.addActionListener(new ActionListener()
+        {
+            public void actionPerformed(ActionEvent e) 
+            {
+                editQuestion();
+            }
+        });
+        
+        deleteButton.addActionListener(new ActionListener()
+        {
+            public void actionPerformed(ActionEvent e) 
+            {
+                //TODO
+            }
+        });
        
         //  buttonsPanel.setLayout(new BoxLayout( buttonsPanel, BoxLayout.Y_AXIS));
         tabbedPane.addTab("QS",  panel);
  
     
     }
-
+    
     private void createQuestion() {
         
-        try{    
-            QuestionSet questionSet = new QuestionSet();
+        try{                
             
-            QuestionTabAdd qt = new QuestionTabAdd(tabbedPane, questionSet);
+            QuestionTabAdd qt = new QuestionTabAdd(tabbedPane, questionSet, qsName);
             qt.initComponents();
         
          }catch (Exception e){}
     }
+    
+    private void editQuestion() {
+        try{ 
+            // 
+            // testing QuestionTabEdit 
+            //
+            
+            Iterator <Question> it = questionSet.iterator(); 
+            if (!it.hasNext()) return ;
+            Question question = it.next();
+            QuestionTabEdit qt = new QuestionTabEdit(tabbedPane, question, questionSet, qsName);
+            qt.initComponents();
+           
+            
+        }catch (Exception e) {}
+        
+    }
+    
+
 }
 
 class MyCellRenderer extends JPanel implements ListCellRenderer {

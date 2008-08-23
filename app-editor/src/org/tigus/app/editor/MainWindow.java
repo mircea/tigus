@@ -1,7 +1,9 @@
 package org.tigus.app.editor;
+
 import org.tigus.core.*;
 
 import javax.swing.*;
+
 import java.awt.event.*; 
 import java.awt.*;
 
@@ -36,8 +38,9 @@ public class MainWindow extends JFrame implements ActionListener {
     
     public MainWindow(){
         super("Question Editor");
+        SwingUtilities.updateComponentTreeUI(this);
         setLocation(50,50);
-        setMinimumSize(new Dimension(600,400));
+        setPreferredSize(new Dimension(700,500));
         
         // add components : menu, toolbar, tooltips, panel
         initComponents();
@@ -150,7 +153,7 @@ public class MainWindow extends JFrame implements ActionListener {
         // add main componenet: JTabbedPane
         tabbedPane = new JTabbedPane();        
         
-        tabbedPane.setSize(350,350);
+        tabbedPane.setPreferredSize(new Dimension(600,400));
         add(tabbedPane);
         
     }
@@ -172,7 +175,8 @@ public class MainWindow extends JFrame implements ActionListener {
                   
             String qsName = (String)JOptionPane.showInputDialog(
                                 this,
-                                "Question Set's Name: ");    
+                                "Question Set's Name: ");   
+            
             if (qsName != null) {
                 QuestionSet qs = new QuestionSet();
                 showQuestionSet(qs, qsName);
