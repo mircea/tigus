@@ -31,6 +31,7 @@ class QuestionTabEdit {
    
     Vector <Answer> answers;
     
+    QuestionSetTab qsTab;
     /* Tab's components */
     
     JTabbedPane tabbedPane;
@@ -38,6 +39,7 @@ class QuestionTabEdit {
     JTextArea answerTextArea = new JTextArea();   
     JTextField tagTextField = new JTextField();
     JTextField tagValueTextField = new JTextField();
+
        
     JButton newButton = new JButton("New answer");
     JButton deleteButton = new JButton("Delete answer");
@@ -71,9 +73,9 @@ class QuestionTabEdit {
      */ 
  
     
-    public QuestionTabEdit(JTabbedPane pane, Question question , 
+    public QuestionTabEdit(QuestionSetTab qsTab, JTabbedPane pane, Question question , 
                             QuestionSet qs, String qsName) {
-      
+        this.qsTab = qsTab;
         this.tabbedPane = pane;   
         this.question = question;
         this.questionSet = qs;
@@ -110,7 +112,8 @@ class QuestionTabEdit {
     
     private void updateAnswersList(Boolean c, String text, int index) {
         
-         if (state.equals("ADD")) {            
+         if (state.equals("ADD")) { 
+          // System.out.println("la adaugare in vectorul answers");
             answers.addElement(new Answer(c, text));  
             
             String s = new String();
@@ -120,16 +123,21 @@ class QuestionTabEdit {
             else  {
                 s = "<html><ul><li type=disc> ";
             }
-            
+          // System.out.println("la adaugare in list model");
             listModel.addElement(s + text +"</ul></html>");
          
-            answersList.setSelectedIndex(answers.size()-1);
+            answersList.setSelectedIndex(answers.size()-1); 
+            state = "EDIT";
+          // System.out.println("la terminare adaugare raspuns nou");
+            return;
         }
         
         if (state.equals("DEL")) {            
             answers.remove(index);                     
             listModel.remove(index);
             answersList.setSelectedIndex(0);
+            state = "EDIT";
+            return;
         }
         
         if (state.equals("EDIT")) {            
@@ -144,7 +152,8 @@ class QuestionTabEdit {
             }
             
             listModel.setElementAt(s+text+"</ul></html>", index);
-            answersList.setSelectedIndex(index);            
+            answersList.setSelectedIndex(index);  
+           
         }
     }
     /**
@@ -177,10 +186,8 @@ class QuestionTabEdit {
      * Retrieves and display's the values of a given tag in class's JLabel object
      * @param tagName - the name of the tag
      */
-    private void showTagValues(String tagName) {
-        
-        
-        
+    private void showTagValues(String tagName) {        
+                
         // get tag's values
         Vector <String> values = new Vector<String>(tagSet.get(tagName));
         String text = new String();
@@ -369,12 +376,9 @@ class QuestionTabEdit {
             public void itemStateChanged(ItemEvent e) {
                 if (e.getStateChange() == ItemEvent.SELECTED) {
                    isCorrect = true;
+                  
                   }
-                else {
-                    if (state.equals("EDIT")) {
-                        correctCount--;
-                        
-                    }
+                else {                    
                     isCorrect = false;
                 }
                 
@@ -395,7 +399,7 @@ class QuestionTabEdit {
             public void actionPerformed(ActionEvent e) {
                state = "DEL";           
                if (isCorrect == true)
-                   correctCount --;
+                   correctCount = 0;
                if (listIndex == -1) {
                    JOptionPane.showMessageDialog(mainPanel,
                            "Please select an answer!", 
@@ -426,23 +430,40 @@ class QuestionTabEdit {
                                "", JOptionPane.ERROR_MESSAGE);
                    return;
                }
-               if (isCorrect == true)
+               if (isCorrect) {
+                   System.out.println("correct count before ++ = " + correctCount);
                    correctCount ++;
-               if (isCorrect == true && correctCount > 1){
+                   
+               }
+               if(state.equals("EDIT")) {
+                   if(!isCorrect &&  answers.elementAt(listIndex).isCorrect()) {
+                       // a correct answer was marked as not correct
+                       correctCount = 0;
+                   }
+               }
+               if (isCorrect && correctCount > 1){
                    JOptionPane.showMessageDialog(mainPanel,
                            "There must be only ONE correct answer!", 
-                               "Error", JOptionPane.ERROR_MESSAGE);                    
+                               "Error", JOptionPane.ERROR_MESSAGE);    
+                   System.out.println("aici la isCorrect == true si correctCount > 1");
                    correctCount--;
                    return;
                }
+               
                if(state == "ADD") {
-                   question.addAnswer(isCorrect, answerText);
+                  // System.out.println("inainte de adaugare raspuns la intrebare");
+                   question.addAnswer(isCorrect, answerText); 
+                 //  System.out.println("dupa adaugare raspuns la intrebare");
                    updateAnswersList(isCorrect, answerText, 0);
                }
                if(state == "EDIT") {
+                 //  System.out.println("la EDIT");
                    question.getAnswers().set(listIndex, new Answer(isCorrect, answerText));               
                    updateAnswersList(isCorrect, answerText, listIndex);
                }
+               
+               
+               state = "EDIT";
            }
             
         });
@@ -526,14 +547,17 @@ class QuestionTabEdit {
                    questionSet.saveToFile(qsName);
                }catch(Exception ex) {}
                
+               qsTab.updateQuestionsList();
                tabbedPane.removeTabAt(tabIndex);
+               
+               
                
            }
         });
         
         cancelButton.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent e) {
-                int value = JOptionPane.showConfirmDialog(null,
+                int value = JOptionPane.showConfirmDialog(mainPanel,
                         "Are you sure you want to cancel?",
                         "", JOptionPane.YES_NO_OPTION);
                

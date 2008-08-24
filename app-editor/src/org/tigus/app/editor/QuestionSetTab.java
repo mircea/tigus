@@ -1,14 +1,11 @@
 package org.tigus.app.editor;
 
-import java.util.Vector;
-import java.awt.Dimension;
 import java.awt.event.*;
 import java.awt.*;
 import javax.swing.*;
-
 import java.util.*;
-
 import org.tigus.core.*;
+
 public class QuestionSetTab {
     
     JTabbedPane tabbedPane = new JTabbedPane();
@@ -19,7 +16,8 @@ public class QuestionSetTab {
     JButton addButton = new JButton("Add question");
     JButton editButton = new JButton("Edit Question");
     JButton deleteButton = new JButton("Delete question");    
-    
+    JLabel qsNameLabel = new JLabel("New Question Set : ");
+    JPanel mainPanel = new JPanel();
     
     public QuestionSetTab(JTabbedPane tabbedPane, 
                             QuestionSet qs, 
@@ -31,25 +29,16 @@ public class QuestionSetTab {
         
     }
     
-    public void initComponents() {   
-        
-        /* 
-         * set components layout
-         */
-        
-        tabbedPane.repaint();
-        
-        
-        
-        JPanel panel1  = new JPanel();
-        JPanel buttonsPanel  = new JPanel();
-       
-        JPanel panel = new JPanel();
-        JPanel qPanel = new JPanel();
+    public void showQuestionSetName(String name) {
+        qsNameLabel.setText("Question Set : " + name);
+    }
+    
+    public void updateQuestionsList() {
         /*
          * create panels for each question 
          * !!! not yet finished, it can show correctly only a QS with one question
          */
+       
         int qsSize = questionSet.size();
         System.out.println("question set size:" + qsSize);
         Vector <JPanel> questionPanels = new Vector<JPanel>();
@@ -62,25 +51,28 @@ public class QuestionSetTab {
             
             Question question = it.next();
             System.out.println("question Text:" + question.getText());
-            Vector <Answer> answers = new Vector<Answer>(question.getAnswers());
-            String answersText = "<html><ul>";
             
+            // get answers
+            Vector <Answer> answers = new Vector<Answer>(question.getAnswers());
+            String answersText = "<html><ul>";            
             
             for (j = 0; j < answers.size(); j++) {
                 answersText += "<li ";
                 if (answers.elementAt(j).isCorrect() == true){
-                    answersText +=  "type=circle> correct    :";
+                    answersText +=  "type=circle> correct    : ";
                 }
-                else answersText += "type=disc> incorrect :";
+                else answersText += "type=disc> incorrect   : ";
                 answersText += answers.elementAt(j).getText();
                 answersText += "<br>";
             }
             answersText += "</ul></html>>";
+            
+            // create question's panel
+            
             JPanel p = new JPanel();
             p.add(new JLabel(question.getText()));
-            JLabel l = new JLabel();
-            l.setText(answersText);
-            p.add(l);//new JLabel().setText(answersText));            
+       
+            p.add(new JLabel(answersText));    
             p.setLayout(new BoxLayout(p, BoxLayout.Y_AXIS));
             
             
@@ -90,8 +82,7 @@ public class QuestionSetTab {
             listModel.addElement(p);
             
             
-            System.out.println("answers:" + answersText);
-            qPanel.add(p);
+            System.out.println("answers:" + answersText);            
             
             i++;
         }
@@ -99,26 +90,51 @@ public class QuestionSetTab {
         questionsList.setCellRenderer(cr);
         questionsList.setListData(questionPanels);
         //questionsList.setModel(listModel);
-        JScrollPane listPanel = new JScrollPane(questionsList);
-        panel1.add(new JLabel("Question Set : " + qsName));
+    }
+    
+    public void initComponents() {   
         
-      
+        /* 
+         * set components layout
+         */
+        
+        tabbedPane.repaint();
+        
+        JPanel panel1  = new JPanel();
+        JPanel buttonsPanel  = new JPanel(); 
+        JScrollPane listPanel = new JScrollPane(questionsList);
+        
+        if (qsName!="") {
+            showQuestionSetName(qsName);
+        }
+        
+        panel1.add(qsNameLabel);
+        
+        /* create JList object for displaying questions*/
+        updateQuestionsList();
+        /* set layout */
                      
         buttonsPanel.add(addButton);             
         buttonsPanel.add(editButton);        
         buttonsPanel.add(deleteButton);        
         buttonsPanel.setLayout(new BoxLayout(buttonsPanel, BoxLayout.X_AXIS));
-        panel.add(panel1);  
-        panel.add(buttonsPanel);
-        //panel.add(new JScrollPane(qPanel));
-        panel.add(listPanel);
-        panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
         
+        mainPanel.add(panel1);  
+        mainPanel.add(buttonsPanel);
+        mainPanel.add(listPanel);
+        mainPanel.setLayout(new BoxLayout(mainPanel, BoxLayout.Y_AXIS));
         
-        /* 
-         * add buttons' listeners
-         */
+        /* add listeners*/
+        addListeners();
+   
+        tabbedPane.addTab("QS",  mainPanel);
         
+    } 
+    
+    /** 
+     * add buttons' listeners
+     */
+    private void addListeners() {
         addButton.addActionListener(new ActionListener()
         {
             public void actionPerformed(ActionEvent e) 
@@ -142,18 +158,15 @@ public class QuestionSetTab {
                 //TODO
             }
         });
-       
-        //  buttonsPanel.setLayout(new BoxLayout( buttonsPanel, BoxLayout.Y_AXIS));
-        tabbedPane.addTab("QS",  panel);
- 
     
     }
-    
+       
+ 
     private void createQuestion() {
         
         try{                
             
-            QuestionTabAdd qt = new QuestionTabAdd(tabbedPane, questionSet, qsName);
+            QuestionTabAdd qt = new QuestionTabAdd(this, tabbedPane, questionSet, qsName);
             qt.initComponents();
         
          }catch (Exception e){}
@@ -168,7 +181,8 @@ public class QuestionSetTab {
             Iterator <Question> it = questionSet.iterator(); 
             if (!it.hasNext()) return ;
             Question question = it.next();
-            QuestionTabEdit qt = new QuestionTabEdit(tabbedPane, question, questionSet, qsName);
+            QuestionTabEdit qt = new QuestionTabEdit(this, tabbedPane, 
+                                                    question, questionSet, qsName);
             qt.initComponents();
            
             
@@ -188,14 +202,18 @@ class MyCellRenderer extends JPanel implements ListCellRenderer {
     }
 
     public Component getListCellRendererComponent(JList list,
-                                                  Object label,
+                                                  Object value,
                                                   int index,
                                                   boolean isSelected,
                                                   boolean cellHasFocus) {
         
-        setBorder(BorderFactory.createTitledBorder(""));
-        add((JPanel)label);
-
+       
+      
+       // add((JPanel)panel);
+        JPanel panel = (JPanel)value;
+        panel.setBorder(BorderFactory.createTitledBorder(""));
+        Component component = (Component)panel; 
+        
         Color background;
         Color foreground;
 
@@ -210,7 +228,7 @@ class MyCellRenderer extends JPanel implements ListCellRenderer {
 
         // check if this cell is selected
         } else if (isSelected) {
-            background = Color.BLUE;
+            background = new Color(177,196,219);
             foreground = Color.WHITE;
 
         // unselected, and not the DnD drop location
@@ -219,9 +237,9 @@ class MyCellRenderer extends JPanel implements ListCellRenderer {
             foreground = Color.BLACK;
         };
 
-        setBackground(background);
-        setForeground(foreground);
+        component.setBackground(background);
+        component.setForeground(foreground);
 
-        return this;
+        return component;
     }
 }

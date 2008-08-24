@@ -18,8 +18,8 @@ import org.tigus.core.*;
 class QuestionTabAdd {
     
     JTabbedPane tabbedPane;
-    JTextArea questionTextArea = new JTextArea();
-    JTextArea answerTextArea = new JTextArea(); 
+    JTextArea questionTextArea = new JTextArea(30,30);
+    JTextArea answerTextArea = new JTextArea(30,30); 
     JTextField tagTextField = new JTextField();
     JTextField tagValueTextField = new JTextField();
     
@@ -41,19 +41,22 @@ class QuestionTabAdd {
     QuestionSet questionSet;
     Question question;
     String qsName;
-    
+    QuestionSetTab qsTab;
     /**
      * Constructor
      * @param pane - the JTabbedPane object in which to add the new tab
      * @param qs - the QuestionSet object in which to add the created Question
      * @param qsname - the name of the QuestionSet
      */
-    public QuestionTabAdd(JTabbedPane pane, QuestionSet qs, String qsName) {
-           
+    public QuestionTabAdd(QuestionSetTab qsTab, JTabbedPane pane, 
+                            QuestionSet qs, String qsName) {
+        
+        this.qsTab = qsTab;   
         this.tabbedPane = pane;
         this.questionSet = qs;
         question = new Question();
         this.qsName = qsName;
+        
         //initComponents();
     }
     
@@ -63,7 +66,8 @@ class QuestionTabAdd {
      * @param none
      */
     public void initComponents() {      
-        
+       
+       
         /*
          * set components size
          */ 
@@ -73,8 +77,8 @@ class QuestionTabAdd {
         tagButton.setMinimumSize(new Dimension(100,25));
         okButton.setPreferredSize(new Dimension(100,25));
         cancelButton.setPreferredSize(new Dimension(100,25));
-        questionTextArea.setPreferredSize(new Dimension(300,100));
-        answerTextArea.setPreferredSize(new Dimension(300,100));
+        //questionTextArea.setPreferredSize(new Dimension(300,100));
+        //answerTextArea.setPreferredSize(new Dimension(300,100));
         
               
         /*  set components layout */
@@ -265,20 +269,22 @@ class QuestionTabAdd {
               
                questionSet.add(question);
                
-               try {
+             /*  try {
                    
                    questionSet.saveToFile(qsName);
                    
-               }catch(Exception ex){
-                   
-               }
+               }catch(Exception ex) {
+                    System.out.println(ex.toString());
+                
+               }*/
                
                int value = JOptionPane.showConfirmDialog(mainPanel,
                        "Do you want to create another question?",
                        "", JOptionPane.YES_NO_OPTION);
               
                if (value == JOptionPane.NO_OPTION) {
-                   tabbedPane.removeTabAt(tabIndex);                   
+                   tabbedPane.removeTabAt(tabIndex);  
+                   qsTab.updateQuestionsList();
                }
                
                else {

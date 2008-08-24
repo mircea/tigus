@@ -1,7 +1,7 @@
 package org.tigus.app.editor;
 
 import org.tigus.core.*;
-
+import java.io.*;
 import javax.swing.*;
 
 import java.awt.event.*; 
@@ -26,10 +26,10 @@ public class MainWindow extends JFrame implements ActionListener {
     JButton []toolBarButtons;
     JTabbedPane tabbedPane;
     
-    Boolean empty ; // if the no question set is loaded in the window
-    
-    
-  
+    Boolean empty ; // true if the no question set is loaded in the window
+    String qsPath;  // the last used path for loading/saving question sets
+    QuestionSet qs; // the question set loaded/created in this window
+    QuestionSetTab qsTab; //the tab showing the question set 
     /**
      * Class Constructor
      * @param none
@@ -40,11 +40,12 @@ public class MainWindow extends JFrame implements ActionListener {
         super("Question Editor");
         SwingUtilities.updateComponentTreeUI(this);
         setLocation(50,50);
-        setPreferredSize(new Dimension(700,500));
+        setPreferredSize(new Dimension(700,550));
         
         // add components : menu, toolbar, tooltips, panel
         initComponents();
         empty = true;
+        qsPath = "";
         
         setTitle("Question Editor");
         setVisible(true);
@@ -100,7 +101,21 @@ public class MainWindow extends JFrame implements ActionListener {
         menuItems[9].setToolTipText("Review/edit a question and save the changes");
         
         menuItems[10].setToolTipText("Move questions between question sets");
-                    
+        
+        // set menu items' accelerators and mnemonics
+        
+        menuItems[0].setAccelerator(KeyStroke.getKeyStroke(
+        KeyEvent.VK_N, ActionEvent.CTRL_MASK));
+        menuItems[1].setAccelerator(KeyStroke.getKeyStroke(
+                KeyEvent.VK_O, ActionEvent.CTRL_MASK));
+        menuItems[2].setAccelerator(KeyStroke.getKeyStroke(
+                KeyEvent.VK_S, ActionEvent.CTRL_MASK));
+        menuItems[3].setAccelerator( KeyStroke.getKeyStroke("shift ctrl S") );
+        
+        menuItems[0].setMnemonic('N');
+        menuItems[1].setMnemonic('O');
+        menuItems[2].setMnemonic('S');
+        menuItems[3].setMnemonic('A');
         
         fileMenu = new JMenu("File");
         questionMenu = new JMenu("Question");
@@ -153,7 +168,7 @@ public class MainWindow extends JFrame implements ActionListener {
         // add main componenet: JTabbedPane
         tabbedPane = new JTabbedPane();        
         
-        tabbedPane.setPreferredSize(new Dimension(600,400));
+        tabbedPane.setPreferredSize(new Dimension(600,500));
         add(tabbedPane);
         
     }
@@ -168,24 +183,35 @@ public class MainWindow extends JFrame implements ActionListener {
         
         String command  = e.getActionCommand();
         System.out.println(command);
-        if (command == "Quit") {
+        if (command.equals("Quit")) {
             showQuitDialog(); 
         }
-        if (command == "New") {
-                  
-            String qsName = (String)JOptionPane.showInputDialog(
-                                this,
-                                "Question Set's Name: ");   
-            
-            if (qsName != null) {
-                QuestionSet qs = new QuestionSet();
-                showQuestionSet(qs, qsName);
-            }
+        
+        if (command.equals("New")) {
+                qs = new QuestionSet();
+                showQuestionSet(qs, "");            
         }
-        if (command == "Open") {
-            QuestionSet qs = new QuestionSet();
+        
+        if (command.equals("Open")) {
+            qs = new QuestionSet();
             
-            String qsName = (String)JOptionPane.showInputDialog(
+            JFileChooser fileChooser = new JFileChooser();
+            int action = fileChooser.showOpenDialog(this);
+            
+            if (action != JFileChooser.APPROVE_OPTION)
+                return;
+            File file = fileChooser.getSelectedFile();
+            String qsPath = file.getPath();
+            String qsName = file.getName();
+            try { 
+                qs.loadFromFile(qsPath);
+               
+            }catch(Exception ex){
+                System.out.println(ex.toString());
+            }
+            
+            showQuestionSet(qs, qsName);
+            /*String qsName = (String)JOptionPane.showInputDialog(
                     this,
                     "Question Set's Name: "); 
             if (qsName != null) {
@@ -197,7 +223,25 @@ public class MainWindow extends JFrame implements ActionListener {
                 }
                 
                 showQuestionSet(qs, qsName);
-            }
+            }*/
+        }
+        if (command.equals("Save") || command.equals("Save As")) {
+            if(qsPath.length() == 0) {
+                JFileChooser fileChooser = new JFileChooser();
+                int action = fileChooser.showSaveDialog(this);
+                
+                if (action != JFileChooser.APPROVE_OPTION)
+                    return;
+                File file = fileChooser.getSelectedFile();
+                qsPath = file.getPath();
+                String qsName = file.getName();
+                qsTab.showQuestionSetName(qsName);
+                try {
+                    qs.saveToFile(qsPath);
+                } catch(IOException ex) {
+                    System.out.println(ex.toString());
+                }                
+            }            
         }
     }
     
@@ -227,9 +271,11 @@ public class MainWindow extends JFrame implements ActionListener {
             return;
         }
         
-        QuestionSetTab qsTab = new QuestionSetTab(tabbedPane, qs, qsName);
+        qsTab = new QuestionSetTab(tabbedPane, qs, qsName);
         qsTab.initComponents();
         menuItems[7].setEnabled(true);
+        menuItems[8].setEnabled(true);
+        menuItems[9].setEnabled(true);
         empty = false;
     }  
     
