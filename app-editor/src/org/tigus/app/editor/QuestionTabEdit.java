@@ -28,7 +28,7 @@ class QuestionTabEdit {
     Question question;
     TagSet tagSet;
     String qsName;
-   
+
     Vector <Answer> answers;
     
     QuestionSetTab qsTab;
@@ -163,14 +163,17 @@ class QuestionTabEdit {
       
         // get tags
         tagSet = question.getTags(); 
-        
+        if (tagSet.isEmpty()) {
+            tagsComboBox.setModel(comboBoxModel);
+            return;
+        }
         Set <String> keys = tagSet.keySet();
         
         // insert tags' names into comboBox
        
         for (Iterator <String> it = keys.iterator(); it.hasNext(); ) {           
            String tagName = new String(it.next());
-         comboBoxModel.addElement(tagName);  
+           comboBoxModel.addElement(tagName);  
          
            tagsNames.addElement(tagName);        
         }
@@ -208,7 +211,7 @@ class QuestionTabEdit {
      */
     
     public void initComponents() {
-        
+               
         showAnswers();
         showTags();
        
@@ -293,8 +296,8 @@ class QuestionTabEdit {
         JPanel gPanel = new JPanel(); 
         gPanel.setLayout(new GridLayout(0,2));
         
-        gPanel.add(new JLabel("Values: "));
         gPanel.add(new JLabel("Tags: "));
+        gPanel.add(new JLabel("Values: "));        
         gPanel.add(tagsComboBox);
         gPanel.add(tagValueLabel);
         gPanel.add(tagTextField);
@@ -547,7 +550,7 @@ class QuestionTabEdit {
                    questionSet.saveToFile(qsName);
                }catch(Exception ex) {}
                
-               qsTab.updateQuestionsList();
+               qsTab.updateQuestionsList("EDIT", question);
                tabbedPane.removeTabAt(tabIndex);
                
                

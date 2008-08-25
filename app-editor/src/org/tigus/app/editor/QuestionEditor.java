@@ -1,8 +1,6 @@
 package org.tigus.app.editor;
 import javax.swing.UIManager;
-import javax.swing.SwingUtilities;
-import javax.swing.plaf.metal.*;
-;
+
 /**
  * Main class for the  Question Editor GUI application
  * 
@@ -20,6 +18,7 @@ public class QuestionEditor {
        new MainWindow();
        
     }
+   
     /**
      * Determine if the system's installed look and feel includes MetalLookAndFeel 
      */
@@ -46,8 +45,7 @@ public class QuestionEditor {
             catch (Exception ex) {
                 System.out.println( "Exception : " + ex.toString());
             }
-            //SwingUtilities.updateComponentTreeUI(this);
-    
+            
         }
     }
 

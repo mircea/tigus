@@ -30,13 +30,15 @@ public class MainWindow extends JFrame implements ActionListener {
     String qsPath;  // the last used path for loading/saving question sets
     QuestionSet qs; // the question set loaded/created in this window
     QuestionSetTab qsTab; //the tab showing the question set 
+   
+    
     /**
      * Class Constructor
      * @param none
      * @see JFrame
      */
     
-    public MainWindow(){
+    public MainWindow() {
         super("Question Editor");
         SwingUtilities.updateComponentTreeUI(this);
         setLocation(50,50);
@@ -46,7 +48,7 @@ public class MainWindow extends JFrame implements ActionListener {
         initComponents();
         empty = true;
         qsPath = "";
-        
+      
         setTitle("Question Editor");
         setVisible(true);
         setDefaultLookAndFeelDecorated (true);
@@ -226,22 +228,30 @@ public class MainWindow extends JFrame implements ActionListener {
             }*/
         }
         if (command.equals("Save") || command.equals("Save As")) {
+            JFileChooser fileChooser;
+            
             if(qsPath.length() == 0) {
-                JFileChooser fileChooser = new JFileChooser();
-                int action = fileChooser.showSaveDialog(this);
-                
-                if (action != JFileChooser.APPROVE_OPTION)
-                    return;
-                File file = fileChooser.getSelectedFile();
-                qsPath = file.getPath();
-                String qsName = file.getName();
-                qsTab.showQuestionSetName(qsName);
-                try {
-                    qs.saveToFile(qsPath);
-                } catch(IOException ex) {
-                    System.out.println(ex.toString());
-                }                
-            }            
+                fileChooser = new JFileChooser();
+            }
+            else  {
+                fileChooser = new JFileChooser(qsPath);
+            }
+            
+            int action = fileChooser.showSaveDialog(this);
+            
+            if (action != JFileChooser.APPROVE_OPTION)
+                return;
+            File file = fileChooser.getSelectedFile();
+            qsPath = file.getPath();
+            String qsName = file.getName();
+            qsTab.showQuestionSetName(qsName);
+            
+            try {
+                qs.saveToFile(qsPath);
+            } catch(IOException ex) {
+                System.out.println(ex.toString());
+            }                
+                        
         }
     }
     
@@ -266,7 +276,7 @@ public class MainWindow extends JFrame implements ActionListener {
     {
         
         if (empty == false){
-            MainWindow newWindow= new MainWindow();
+            MainWindow newWindow = new MainWindow();
             newWindow.showQuestionSet(qs, qsName);
             return;
         }

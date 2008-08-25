@@ -284,7 +284,7 @@ class QuestionTabAdd {
               
                if (value == JOptionPane.NO_OPTION) {
                    tabbedPane.removeTabAt(tabIndex);  
-                   qsTab.updateQuestionsList();
+                   qsTab.updateQuestionsList("ADD", question);
                }
                
                else {
