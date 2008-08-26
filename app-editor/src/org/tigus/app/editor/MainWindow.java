@@ -13,16 +13,18 @@ import java.awt.*;
  * @author Adriana Draghici
  * 
  */
-public class MainWindow extends JFrame implements ActionListener {
+public class MainWindow implements ActionListener {
     
     /*
      * GUI components
      */
+    JFrame frame;
     JMenuBar menuBar;
     JToolBar toolBar;
     JMenuItem []menuItems;
     JMenu fileMenu;
     JMenu questionMenu;
+    JMenu toolsMenu;
     JButton []toolBarButtons;
     JTabbedPane tabbedPane;
     
@@ -39,24 +41,25 @@ public class MainWindow extends JFrame implements ActionListener {
      */
     
     public MainWindow() {
-        super("Question Editor");
-        SwingUtilities.updateComponentTreeUI(this);
-        setLocation(50,50);
-        setPreferredSize(new Dimension(700,550));
+        //super("Question Editor");
+        frame = new JFrame("Question Editor");
+       // SwingUtilities.updateComponentTreeUI(this);
+        frame.setLocation(50,50);
+        frame.setPreferredSize(new Dimension(700,550));
         
         // add components : menu, toolbar, tooltips, panel
         initComponents();
         empty = true;
         qsPath = "";
       
-        setTitle("Question Editor");
-        setVisible(true);
-        setDefaultLookAndFeelDecorated (true);
-        pack();
+        frame.setTitle("Question Editor");
+        frame.setVisible(true);
+        //frame.setDefaultLookAndFeelDecorated (true);
+        frame.pack();
         
         // Add a window listener for close button
-        setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE);
-        addWindowListener(new WindowAdapter() {
+        frame.setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE);
+        frame.addWindowListener(new WindowAdapter() {
             public void windowClosing(WindowEvent e) {
                 showQuitDialog();
             }
@@ -72,8 +75,8 @@ public class MainWindow extends JFrame implements ActionListener {
     private void initComponents() {
         int i;
         
-        String []menuItemsNames = {"New", "Open", "Save", "Save As",
-                                    "Import", "Include", "Quit", 
+        String []menuItemsNames = {"New", "Open...", "Save", "Save As...",
+                                    "Import...", "Include", "Quit", 
                                     "Create", "Delete", "Review", "Move"};
         String []iconNames = {"images/newQS.png", "images/open.png", "images/save.png",
                                 "images/saveas.png", "", "", "images/exit.png",
@@ -137,12 +140,17 @@ public class MainWindow extends JFrame implements ActionListener {
             //These items are enabled only when a question set is loaded or created
             menuItems[i].setEnabled(false);
         }
+        JMenuItem preferencesMenuItem = new JMenuItem("Preferences");
+        toolsMenu = new JMenu("Tools");
+        fileMenu.setMnemonic(KeyEvent.VK_T);
+        toolsMenu.add(preferencesMenuItem);
         
         menuBar = new JMenuBar();
         menuBar.add(fileMenu);
         menuBar.add(questionMenu);
-    
-        setJMenuBar(menuBar);   
+        menuBar.add(toolsMenu);
+        
+        frame.setJMenuBar(menuBar);   
         
         // create toolbar
         
@@ -165,13 +173,13 @@ public class MainWindow extends JFrame implements ActionListener {
             toolBar.add(toolBarButtons[i]);
         }
         
-        add(toolBar, BorderLayout.PAGE_START);
+        frame.add(toolBar, BorderLayout.PAGE_START);
         
         // add main componenet: JTabbedPane
         tabbedPane = new JTabbedPane();        
         
         tabbedPane.setPreferredSize(new Dimension(600,500));
-        add(tabbedPane);
+        frame.add(tabbedPane);
         
     }
     
@@ -194,17 +202,19 @@ public class MainWindow extends JFrame implements ActionListener {
                 showQuestionSet(qs, "");            
         }
         
-        if (command.equals("Open")) {
+        if (command.equals("Open...")) { 
             qs = new QuestionSet();
-            
+           
             JFileChooser fileChooser = new JFileChooser();
-            int action = fileChooser.showOpenDialog(this);
+            int action = fileChooser.showOpenDialog(frame);
             
             if (action != JFileChooser.APPROVE_OPTION)
                 return;
             File file = fileChooser.getSelectedFile();
             String qsPath = file.getPath();
             String qsName = file.getName();
+            frame.setTitle(qsName + " - Question Editor");
+            
             try { 
                 qs.loadFromFile(qsPath);
                
@@ -213,21 +223,9 @@ public class MainWindow extends JFrame implements ActionListener {
             }
             
             showQuestionSet(qs, qsName);
-            /*String qsName = (String)JOptionPane.showInputDialog(
-                    this,
-                    "Question Set's Name: "); 
-            if (qsName != null) {
-                try { 
-                    qs.loadFromFile(qsName);
-                   
-                }catch(Exception ex){
-                    System.out.println(ex.toString());
-                }
-                
-                showQuestionSet(qs, qsName);
-            }*/
+            
         }
-        if (command.equals("Save") || command.equals("Save As")) {
+        if (command.equals("Save") || command.equals("Save As...")) {
             JFileChooser fileChooser;
             
             if(qsPath.length() == 0) {
@@ -237,14 +235,14 @@ public class MainWindow extends JFrame implements ActionListener {
                 fileChooser = new JFileChooser(qsPath);
             }
             
-            int action = fileChooser.showSaveDialog(this);
+            int action = fileChooser.showSaveDialog(frame);
             
             if (action != JFileChooser.APPROVE_OPTION)
                 return;
             File file = fileChooser.getSelectedFile();
             qsPath = file.getPath();
             String qsName = file.getName();
-            qsTab.showQuestionSetName(qsName);
+            frame.setTitle(qsName + " - Question Editor");
             
             try {
                 qs.saveToFile(qsPath);
@@ -268,19 +266,20 @@ public class MainWindow extends JFrame implements ActionListener {
                 "exit", JOptionPane.YES_NO_OPTION);
        
         if (value == JOptionPane.YES_OPTION) {
-            System.exit(0);
+            frame.setVisible( false );
+            frame.dispose();
         }
         
     }
     private void showQuestionSet(QuestionSet qs, String qsName)
     {
         
-        if (empty == false){
+        if (empty == false) {
             MainWindow newWindow = new MainWindow();
             newWindow.showQuestionSet(qs, qsName);
             return;
         }
-        
+  
         qsTab = new QuestionSetTab(tabbedPane, qs, qsName);
         qsTab.initComponents();
         menuItems[7].setEnabled(true);

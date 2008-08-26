@@ -1,29 +1,34 @@
+
 package org.tigus.app.editor;
 
 import java.awt.Dimension;
-import java.awt.event.*;
 import java.awt.GridLayout;
-import javax.swing.event.*;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.awt.event.ItemEvent;
+import java.awt.event.ItemListener;
+import java.util.Iterator;
+import java.util.Set;
+import java.util.Vector;
+
 import javax.swing.*;
 
-import java.util.*;
+import javax.swing.event.ListSelectionEvent;
+import javax.swing.event.ListSelectionListener;
 
 import org.tigus.core.*;
 
 /**
- *  This class represents a tab with components that permit editing a new Question
- * @author Adriana Draghici
+ * @author adriana
  *
  */
-
-class QuestionTabEdit {
-        
+public class QuestionTab {
     int listIndex;
     int tabIndex;
     int correctCount;
     Boolean isCorrect;
     String state;
-   
+    String op;  // the type of operation for which this tag was created : "NewQ" or "EditQ"
     QuestionSet questionSet;
     Question question;
     TagSet tagSet;
@@ -73,14 +78,14 @@ class QuestionTabEdit {
      */ 
  
     
-    public QuestionTabEdit(QuestionSetTab qsTab, JTabbedPane pane, Question question , 
+    public QuestionTab(String op, QuestionSetTab qsTab, JTabbedPane pane, Question question , 
                             QuestionSet qs, String qsName) {
         this.qsTab = qsTab;
         this.tabbedPane = pane;   
         this.question = question;
         this.questionSet = qs;
         this.qsName = qsName;
-        
+        this.op = op;
         isCorrect = false; 
         state = "ADD"; 
         correctCount = 0;
@@ -91,8 +96,14 @@ class QuestionTabEdit {
      * Builds a list of the question's answers    
      */
     private void showAnswers() {
-        
         answers = new Vector<Answer>(question.getAnswers());
+        
+        if(op.equals("NewQ")) {
+            answersList = new JList(listModel);
+            listIndex = -1;
+            return;
+        }
+        
         
         // build a list model containing the question's answer 
         String s;
@@ -211,7 +222,7 @@ class QuestionTabEdit {
      */
     
     public void initComponents() {
-               
+        
         showAnswers();
         showTags();
        
@@ -228,13 +239,14 @@ class QuestionTabEdit {
         removeTagButton.setPreferredSize(new Dimension(200,25));
         okButton.setPreferredSize(new Dimension(100,25));
         cancelButton.setPreferredSize(new Dimension(100,25));
-        questionTextArea.setPreferredSize(new Dimension(300,100));
-        answerTextArea.setPreferredSize(new Dimension(300,100));
+        questionTextArea.setPreferredSize(new Dimension(300,600));
+        answerTextArea.setPreferredSize(new Dimension(300,600));
         
-        
+        answerTextArea.setToolTipText("Write the answer's text");
+     
         answersList.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
         listScrollPane = new JScrollPane(answersList);
-        
+        listScrollPane.setPreferredSize(new Dimension(300,1200));
         
         /* set components layout */        
         
@@ -242,6 +254,7 @@ class QuestionTabEdit {
         
         
         /* add new tab */
+        
         
         tabbedPane.addTab("Question", mainPanel);
         tabIndex = tabbedPane.getTabCount() -1;
@@ -260,8 +273,7 @@ class QuestionTabEdit {
      * @return JPanel object
      */
     private JPanel setLayout() {
-        
-        JPanel questionPanel = new JPanel();
+
         JPanel answerPanel = new JPanel();
         JPanel tagsPanel = new JPanel();
         JPanel buttonsPanel = new JPanel();
@@ -275,10 +287,9 @@ class QuestionTabEdit {
         correctCheckBox.setAlignmentX(java.awt.Component.LEFT_ALIGNMENT);
         saveButton.setAlignmentX(java.awt.Component.LEFT_ALIGNMENT);
         
-        questionPanel.add(questionScrollPane);
-        questionPanel.add(listScrollPane);
-        questionPanel.setBorder(BorderFactory.createTitledBorder("Text"));
-        questionPanel.setLayout(new BoxLayout(questionPanel, BoxLayout.Y_AXIS));
+      
+        questionScrollPane.setBorder(BorderFactory.createTitledBorder("Text"));
+        listScrollPane.setBorder(BorderFactory.createTitledBorder("Answers List"));
        
         buttonsPanel.add(newButton);
         buttonsPanel.add(deleteButton);
@@ -315,7 +326,7 @@ class QuestionTabEdit {
         
         tagsPanel.setLayout(new BoxLayout(tagsPanel, BoxLayout.Y_AXIS));
         tagsPanel.setAlignmentX(java.awt.Component.LEFT_ALIGNMENT);
-        tagsPanel.setBorder(BorderFactory.createTitledBorder("tags"));
+        tagsPanel.setBorder(BorderFactory.createTitledBorder("Tags"));
         
         
         confirmPanel.add(okButton);
@@ -323,8 +334,9 @@ class QuestionTabEdit {
         confirmPanel.setAlignmentX(java.awt.Component.LEFT_ALIGNMENT);
         
         
-        verticalPanel.add(questionPanel);       
-        verticalPanel.add(answerPanel);
+        verticalPanel.add(questionScrollPane);       
+        verticalPanel.add(listScrollPane);
+        verticalPanel.add(answerPanel);        
         verticalPanel.add(tagsPanel);
         verticalPanel.add(confirmPanel);
         verticalPanel.setLayout(new BoxLayout(verticalPanel, BoxLayout.Y_AXIS));
@@ -549,8 +561,12 @@ class QuestionTabEdit {
                try {
                    questionSet.saveToFile(qsName);
                }catch(Exception ex) {}
-               
-               qsTab.updateQuestionsList("EDIT", question);
+               if(op.equals("EditQ")) {
+                   qsTab.updateQuestionsList("EDIT", question);
+               }
+               else if(op.equals("NewQ")) {
+                   qsTab.updateQuestionsList("NEW", question);
+               }
                tabbedPane.removeTabAt(tabIndex);
                
                
@@ -572,5 +588,3 @@ class QuestionTabEdit {
     }
 
 }
-
-    

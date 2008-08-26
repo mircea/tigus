@@ -29,7 +29,7 @@ public class QuestionSetTab {
     JButton addButton = new JButton("Add question");
     JButton editButton = new JButton("Edit Question");
     JButton deleteButton = new JButton("Delete question");    
-    JLabel qsNameLabel = new JLabel("New Question Set : ");
+   
     JLabel tagValueLabel = new JLabel("");    
     JComboBox tagsComboBox = new JComboBox();    
     JPanel mainPanel = new JPanel();
@@ -57,9 +57,7 @@ public class QuestionSetTab {
      * Displays in a label the name of the question set
      * @param name - the name of the question set
      */
-    public void showQuestionSetName(String name) {
-        qsNameLabel.setText("Question Set : " + name);
-    }
+   
     /**
      * Updates the objects that keep the questions, including the JList objects that displays them
      * @param op - the change made to the question set. Values : "ADD" , "EDIT", "DEL"
@@ -244,10 +242,7 @@ public class QuestionSetTab {
     public void initComponents() {   
         
         tabbedPane.repaint();
-       
-        if (qsName!="") {
-            showQuestionSetName(qsName);
-        }
+      
         
         /* create JList object for displaying questions*/
         createQuestionsList();
@@ -284,7 +279,6 @@ public class QuestionSetTab {
         tagsPanel.add(tagsComboBox);
         tagsPanel.add(tagValueLabel);
         
-        panel.add(qsNameLabel);  
         panel.add(buttonsPanel);
         panel.add(listPanel);
         panel.add(tagsPanel);
@@ -350,8 +344,10 @@ public class QuestionSetTab {
     private void createQuestion() {
         
         try{                
-            
-            QuestionTabAdd qt = new QuestionTabAdd(this, tabbedPane, questionSet, qsName);
+            Question question = new Question();
+            //QuestionTabAdd qt = new QuestionTabAdd(this, tabbedPane, questionSet, qsName);
+            QuestionTab qt = new QuestionTab("NewQ", this, tabbedPane,
+                                                    question, questionSet, qsName);
             qt.initComponents();
         
          }catch (Exception e){}
@@ -369,7 +365,7 @@ public class QuestionSetTab {
             int index = questionsList.getSelectedIndex();
             System.out.println("index = "+index);
             Question question = questions.elementAt(index);
-            QuestionTabEdit qt = new QuestionTabEdit(this, tabbedPane, 
+            QuestionTab qt = new QuestionTab("EditQ", this, tabbedPane, 
                                                     question, questionSet, qsName);
             qt.initComponents();
            
