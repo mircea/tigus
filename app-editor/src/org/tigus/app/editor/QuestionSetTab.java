@@ -16,7 +16,9 @@ import org.tigus.core.*;
  */
 public class QuestionSetTab {
     
-    JTabbedPane tabbedPane = new JTabbedPane();
+    
+    MainWindow mainWindow;
+    JTabbedPane tabbedPane;
     QuestionSet questionSet;
     String qsName;
     int listIndex;
@@ -29,9 +31,7 @@ public class QuestionSetTab {
     JButton addButton = new JButton("Add question");
     JButton editButton = new JButton("Edit Question");
     JButton deleteButton = new JButton("Delete question");    
-   
-    JLabel tagValueLabel = new JLabel("");    
-    JComboBox tagsComboBox = new JComboBox();    
+    
     JPanel mainPanel = new JPanel();
     DefaultListModel listModel = new DefaultListModel();
  
@@ -42,10 +42,11 @@ public class QuestionSetTab {
      * @param qs - the QuestionSet object to be displayed
      * @param qsName - the question set's name
      */
-    public QuestionSetTab(JTabbedPane tabbedPane, 
+    public QuestionSetTab(MainWindow mainWindow, 
                             QuestionSet qs, 
                             String qsName) {
-        this.tabbedPane = tabbedPane;
+        this.mainWindow = mainWindow;
+        tabbedPane = mainWindow.getTabbedPane();
         questionSet = qs;
         this.qsName = qsName;
         listIndex = -1;
@@ -53,10 +54,6 @@ public class QuestionSetTab {
         
     }
     
-    /**
-     * Displays in a label the name of the question set
-     * @param name - the name of the question set
-     */
    
     /**
      * Updates the objects that keep the questions, including the JList objects that displays them
@@ -66,23 +63,25 @@ public class QuestionSetTab {
     public void updateQuestionsList(String op, Question question) {
         if (op.equals("ADD")) {
             questions.add(question);
-            
             JPanel panel = createQuestionPanel(question);
-            questionPanels.add(panel);      
+            questionPanels.add(panel);  
             listModel.addElement(panel);
+            
+            
             return;
         }
         
         if (op.equals("EDIT")) {
-            int index = questions.indexOf(question);
             
+            int index = questions.indexOf(question);
+            System.out.println("la EDIT index = " + index);
             questions.setElementAt(question, index);
             
-            JPanel panel = createQuestionPanel(question);
-            
-            index = listModel.indexOf(question);
+            JPanel panel = createQuestionPanel(question);          
+      
             questionPanels.setElementAt(panel, index);
             listModel.setElementAt(panel, index);
+            
             return;
         }
         
@@ -94,6 +93,9 @@ public class QuestionSetTab {
             System.out.println("listModel.indexOf(question) = " + index);
             listModel.removeElementAt(index);            
         }
+        
+        // announces the main window that unsaved changes were made
+        mainWindow.questionSetChanged();
     }
     /**
      * Creates a panel showing the question's text and it's answers.
@@ -122,6 +124,7 @@ public class QuestionSetTab {
         TagSet tagSet = question.getTags(); 
         tags.addElement(tagSet);
         
+        /*
         String tagsNames = "<html><b>tags: <b>";
         
         if (!tagSet.isEmpty()) {
@@ -136,14 +139,14 @@ public class QuestionSetTab {
                    tagsNames += ", ";
                    
             }
-        }
+        }*/
         // create question's panel
         
         JPanel p = new JPanel();
         p.add(new JLabel(question.getText()));
    
         p.add(new JLabel(answersText));    
-        p.add(new JLabel(tagsNames));
+        p.add(new JLabel(showTags(tagSet)));
         p.setLayout(new BoxLayout(p, BoxLayout.Y_AXIS));
         return p;
     
@@ -188,51 +191,33 @@ public class QuestionSetTab {
      * Shows the selected question's tags in the panel's combo box
      * @param index - item selected from the list
      */
-    private void showTags(int index) {        
-                
-        DefaultComboBoxModel comboBoxModel = new DefaultComboBoxModel();   
-        tagValueLabel.setText("");
-        
-        // get tag's values
-        TagSet tagSet = tags.elementAt(index);
-        if (tagSet.isEmpty()) {  
-            tagsComboBox.setModel(comboBoxModel);       
-            return;
-        }
+    private String showTags(TagSet tagSet) {
+        // get tags
+
         Set <String> keys = tagSet.keySet();
-        
+        String text = "<html><DL><DT> Tags: <br>";
         // insert tags' names into comboBox
         
         for (Iterator <String> it = keys.iterator(); it.hasNext(); ) {           
            String tagName = new String(it.next());
-           comboBoxModel.addElement(tagName);
-        }
-        tagsComboBox.setModel(comboBoxModel);
-        tagsComboBox.setEditable(false);
-        tagsComboBox.setSelectedItem(0);
+           text += "<DD>";
+           text += tagName;
+           text += ": ";
+           Vector <String> values = new Vector<String>(tagSet.get(tagName));
+           text += values.elementAt(0);
+           for (int i = 1; i < values.size(); i++){                    
+               text += ", ";
+               text += values.elementAt(i);
+           }
+           text += "<br>";
+          
+        } 
+        text += "</DL> </html>";
         
-        
-        
-        showTagValues((String)tagsComboBox.getSelectedItem(), index);
+        return text;    
     }
-    /**
-     * Shows the values of a tag selected from the combo box
-     * @param tagName - the tag's name
-     * @param index - the index of the question
-     */
-    private void showTagValues(String tagName, int index) {
-        TagSet tagSet = tags.elementAt(index);
-        Vector <String> values = new Vector<String>(tagSet.get(tagName));
-        String text = new String();
-        text += values.elementAt(0);
-        
-        for (int i = 1; i < values.size(); i++){                    
-            text += ", ";
-            text += values.elementAt(i);
-        }
-        
-        tagValueLabel.setText(text);
-    }
+    
+   
     /**
      * Initializes the GUI components
      * @param none
@@ -263,25 +248,15 @@ public class QuestionSetTab {
     private JPanel setLayout() {
         JPanel panel  = new JPanel();
         JPanel buttonsPanel  = new JPanel(); 
-        JPanel tagsPanel  = new JPanel(); 
         JScrollPane listPanel = new JScrollPane(questionsList);
         
         buttonsPanel.add(addButton);             
         buttonsPanel.add(editButton);        
         buttonsPanel.add(deleteButton);        
-        buttonsPanel.setLayout(new BoxLayout(buttonsPanel, BoxLayout.X_AXIS));
-        
-        
-      //  tagsPanel.setLayout(new BoxLayout(tagsPanel, BoxLayout.X_AXIS));
-        tagsPanel.setLayout(new GridLayout(0,2));        
-        tagsPanel.add(new JLabel("Tags: "));
-        tagsPanel.add(new JLabel("Values: "));
-        tagsPanel.add(tagsComboBox);
-        tagsPanel.add(tagValueLabel);
-        
+        buttonsPanel.setLayout(new BoxLayout(buttonsPanel, BoxLayout.X_AXIS));        
+             
         panel.add(buttonsPanel);
         panel.add(listPanel);
-        panel.add(tagsPanel);
         panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
         
         return panel;
@@ -316,12 +291,7 @@ public class QuestionSetTab {
             }
         });
         
-        tagsComboBox.addActionListener(new ActionListener() {
-            public void actionPerformed(ActionEvent e) {
-                String tagName = (String)tagsComboBox.getSelectedItem();
-                showTagValues(tagName, listIndex);                
-            }
-        });
+        
         questionsList.addListSelectionListener(new ListSelectionListener() {
 
             public void valueChanged(ListSelectionEvent e) {
@@ -330,7 +300,7 @@ public class QuestionSetTab {
                     return;
                 }
                 listIndex = index;
-                showTags(index);
+             //   showTags(index);
              
             }
         });

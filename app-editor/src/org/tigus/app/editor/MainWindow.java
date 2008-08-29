@@ -29,6 +29,8 @@ public class MainWindow implements ActionListener {
     JTabbedPane tabbedPane;
     
     Boolean empty ; // true if the no question set is loaded in the window
+    Boolean untitled;   // true if the QS was created but saved.
+    Boolean unsaved;    // true if the QS was modified but not saved
     String qsPath;  // the last used path for loading/saving question sets
     QuestionSet qs; // the question set loaded/created in this window
     QuestionSetTab qsTab; //the tab showing the question set 
@@ -49,10 +51,12 @@ public class MainWindow implements ActionListener {
         
         // add components : menu, toolbar, tooltips, panel
         initComponents();
+        untitled = true;
+        unsaved = false;
         empty = true;
         qsPath = "";
       
-        frame.setTitle("Question Editor");
+        frame.setTitle("Untitled - Question Editor");
         frame.setVisible(true);
         //frame.setDefaultLookAndFeelDecorated (true);
         frame.pack();
@@ -95,7 +99,7 @@ public class MainWindow implements ActionListener {
             // add listeners to the JMenuItems components
             menuItems[i].addActionListener(this);
         }
-        
+              
         // add tooltips to the JMenuItems components
         menuItems[0].setToolTipText("Create a new question set");
         menuItems[1].setToolTipText("Select a question set and load its content");
@@ -182,7 +186,12 @@ public class MainWindow implements ActionListener {
         frame.add(tabbedPane);
         
     }
-    
+    public JTabbedPane getTabbedPane() {
+        return tabbedPane;
+    }
+    public void questionSetChanged() {
+        unsaved = true;
+    }
     /**
      * Implementation of actionPerformed method inherited from ActionListener interface
      * @param ActionEvent 
@@ -198,11 +207,17 @@ public class MainWindow implements ActionListener {
         }
         
         if (command.equals("New")) {
-                qs = new QuestionSet();
-                showQuestionSet(qs, "");            
+            if (empty == false) {
+                MainWindow newWindow = new MainWindow();
+                newWindow.showQuestionSet(new QuestionSet(), "");
+                return;
+            }
+            unsaved = true;
+            showQuestionSet(new QuestionSet(), "");               
         }
         
         if (command.equals("Open...")) { 
+            
             qs = new QuestionSet();
            
             JFileChooser fileChooser = new JFileChooser();
@@ -211,21 +226,42 @@ public class MainWindow implements ActionListener {
             if (action != JFileChooser.APPROVE_OPTION)
                 return;
             File file = fileChooser.getSelectedFile();
-            String qsPath = file.getPath();
-            String qsName = file.getName();
-            frame.setTitle(qsName + " - Question Editor");
+            String path = file.getPath();
+            String qsName = file.getName();     
             
             try { 
-                qs.loadFromFile(qsPath);
+                qs.loadFromFile(path);
                
             }catch(Exception ex){
                 System.out.println(ex.toString());
             }
             
+            if (empty == false) {
+                MainWindow newWindow = new MainWindow();
+                newWindow.showQuestionSet(qs, qsName);
+                return;
+            }
+            
+            qsPath = path;
+            
             showQuestionSet(qs, qsName);
+            return;
             
         }
-        if (command.equals("Save") || command.equals("Save As...")) {
+        
+        if (command.equals("Save") && untitled == false) {
+            try {
+                qs.saveToFile(qsPath);
+            } catch(IOException ex) {
+                ex.printStackTrace();
+            }       
+           
+            unsaved = false;
+            return;
+        }    
+        
+        if(command.equals("Save As...") ||
+                (command.equals("Save") && untitled == true)) {
             JFileChooser fileChooser;
             
             if(qsPath.length() == 0) {
@@ -247,9 +283,13 @@ public class MainWindow implements ActionListener {
             try {
                 qs.saveToFile(qsPath);
             } catch(IOException ex) {
-                System.out.println(ex.toString());
-            }                
-                        
+                ex.printStackTrace();
+            }      
+            
+            untitled = false;
+            unsaved = false;
+            
+            return;
         }
     }
     
@@ -261,9 +301,13 @@ public class MainWindow implements ActionListener {
      */
     private void showQuitDialog()
     {
-        int value = JOptionPane.showConfirmDialog(null,
-                "Are you sure you want to exit?",
-                "exit", JOptionPane.YES_NO_OPTION);
+        String msg = new String();
+        if(unsaved) 
+            msg = "There are unsaved changes! Exit anyway?";
+        else msg = "Exit Question Editor?";
+        
+        int value = JOptionPane.showConfirmDialog(frame.getContentPane(),
+                    msg, "exit", JOptionPane.YES_NO_OPTION);
        
         if (value == JOptionPane.YES_OPTION) {
             frame.setVisible( false );
@@ -271,16 +315,11 @@ public class MainWindow implements ActionListener {
         }
         
     }
-    private void showQuestionSet(QuestionSet qs, String qsName)
+    private void showQuestionSet(QuestionSet qs, String name)
     {
-        
-        if (empty == false) {
-            MainWindow newWindow = new MainWindow();
-            newWindow.showQuestionSet(qs, qsName);
-            return;
-        }
-  
-        qsTab = new QuestionSetTab(tabbedPane, qs, qsName);
+        if(name.length() > 0)
+            frame.setTitle(name + " - Question Editor");
+        qsTab = new QuestionSetTab(this, qs, name);
         qsTab.initComponents();
         menuItems[7].setEnabled(true);
         menuItems[8].setEnabled(true);
@@ -288,6 +327,7 @@ public class MainWindow implements ActionListener {
         empty = false;
     }  
     
+  
 }
 
 

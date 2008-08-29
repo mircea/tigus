@@ -184,10 +184,10 @@ public class QuestionTab {
        
         for (Iterator <String> it = keys.iterator(); it.hasNext(); ) {           
            String tagName = new String(it.next());
-           comboBoxModel.addElement(tagName);  
-         
-           tagsNames.addElement(tagName);        
+           comboBoxModel.addElement(tagName);           
+           tagsNames.addElement(tagName);       
         }
+        
         tagsComboBox.setModel(comboBoxModel);
         tagsComboBox.setEditable(false);
         tagsComboBox.setSelectedItem(0);
@@ -201,7 +201,7 @@ public class QuestionTab {
      * @param tagName - the name of the tag
      */
     private void showTagValues(String tagName) {        
-                
+        System.out.println("la showTagValues() tagName = " + tagName);        
         // get tag's values
         Vector <String> values = new Vector<String>(tagSet.get(tagName));
         String text = new String();
@@ -354,14 +354,22 @@ public class QuestionTab {
         answersList.addListSelectionListener(new ListSelectionListener() {
 
             public void valueChanged(ListSelectionEvent e) {
+                int newIndex = answersList.getSelectedIndex();
+                if(listIndex == newIndex) {
+                    return;
+                }
+                    
+                listIndex = newIndex;
                 if (state.equals("DEL")) {
                     answerTextArea.setText("");
                     correctCheckBox.setSelected(false);
+                    
+                    System.out.println("la value chenged la DEL");
                     return;
                 }
                 state = "EDIT";
                 
-                listIndex = answersList.getSelectedIndex();
+                
                 System.out.println("index : " + listIndex);
                 String answerText = answers.elementAt(listIndex).getText();
                 
@@ -510,12 +518,12 @@ public class QuestionTab {
                     if (value == JOptionPane.NO_OPTION) {
                         return;
                     }                     
-                    
-                    comboBoxModel.removeElement(tagName);
-                    
+                    comboBoxModel.removeElement(tagName);                    
                 }
-                comboBoxModel.addElement(tagName);
+                
+                // modify the question then modify the comboBoxModel! 
                 question.setTagValueList(tagName, tagValues);                  
+                comboBoxModel.addElement(tagName);
                 
                 // clear components
                 tagTextField.setText("");
@@ -535,6 +543,7 @@ public class QuestionTab {
                 if (value == JOptionPane.NO_OPTION) {
                     return;
                 } 
+                
                 tagSet.remove(tagName);
                 comboBoxModel.removeElement(tagName);
             }
@@ -556,16 +565,13 @@ public class QuestionTab {
                                "warning", JOptionPane.WARNING_MESSAGE);
                }
                
-               question.setId(questionText);
-              
-               try {
-                   questionSet.saveToFile(qsName);
-               }catch(Exception ex) {}
+               question.setText(questionText);
+         
                if(op.equals("EditQ")) {
                    qsTab.updateQuestionsList("EDIT", question);
                }
                else if(op.equals("NewQ")) {
-                   qsTab.updateQuestionsList("NEW", question);
+                   qsTab.updateQuestionsList("ADD", question);
                }
                tabbedPane.removeTabAt(tabIndex);
                
