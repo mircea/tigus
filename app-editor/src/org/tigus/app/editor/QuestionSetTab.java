@@ -1,10 +1,13 @@
 package org.tigus.app.editor;
 
 import java.awt.*;
+import java.awt.dnd.*;
+import java.awt.datatransfer.*;
 import java.awt.event.*;
 import javax.swing.*;
 import javax.swing.event.*;
-
+import javax.activation.DataHandler;
+import javax.activation.ActivationDataFlavor;
 import java.util.*;
 
 import org.tigus.core.*;
@@ -25,7 +28,8 @@ public class QuestionSetTab {
     Vector <Question> questions = new Vector<Question>();
     Vector <JPanel> questionPanels = new Vector<JPanel>();
     Vector <TagSet> tags = new Vector<TagSet>();
-    
+    DropTarget dt;
+    DragSource ds;
     
     JList questionsList = new JList();    
     JButton addButton = new JButton("Add question");
@@ -102,7 +106,7 @@ public class QuestionSetTab {
      * @param question
      * @return JPanel object 
      */
-    private JPanel createQuestionPanel(Question question) {
+    public JPanel createQuestionPanel(Question question) {
         
         // get answers
         Vector <Answer> answers = new Vector<Answer>(question.getAnswers());
@@ -123,23 +127,7 @@ public class QuestionSetTab {
         // get tags
         TagSet tagSet = question.getTags(); 
         tags.addElement(tagSet);
-        
-        /*
-        String tagsNames = "<html><b>tags: <b>";
-        
-        if (!tagSet.isEmpty()) {
-            
-            Set <String> keys = tagSet.keySet();
-        
-            for (Iterator <String> it = keys.iterator(); it.hasNext(); ) {           
-               String tagName = new String(it.next());
-               
-               tagsNames += tagName;
-               if(it.hasNext())
-                   tagsNames += ", ";
-                   
-            }
-        }*/
+
         // create question's panel
         
         JPanel p = new JPanel();
@@ -156,7 +144,7 @@ public class QuestionSetTab {
      * @params none
      * @return none
      */
-    private void createQuestionsList() {
+    public void createQuestionsList() {
         /*
          * create panels for each question 
          * !!! not yet finished, it can show correctly only a QS with one question
@@ -182,16 +170,15 @@ public class QuestionSetTab {
             i++;
         }
         
-        MyCellRenderer cr = new MyCellRenderer();
-        questionsList.setCellRenderer(cr);
-       // questionsList.setListData(questionPanels);
-        questionsList.setModel(listModel);
+
     }
+    
+
     /**
      * Shows the selected question's tags in the panel's combo box
      * @param index - item selected from the list
      */
-    private String showTags(TagSet tagSet) {
+    public String showTags(TagSet tagSet) {
         // get tags
 
         Set <String> keys = tagSet.keySet();
@@ -217,8 +204,13 @@ public class QuestionSetTab {
         return text;    
     }
     
-   
-    /**
+    public Question getQuestion(int index) {
+        return questions.elementAt(index);
+    }
+    public QuestionSet getQuestionSet() {
+        return questionSet;
+    }
+     /**
      * Initializes the GUI components
      * @param none
      * @return none
@@ -231,6 +223,11 @@ public class QuestionSetTab {
         
         /* create JList object for displaying questions*/
         createQuestionsList();
+        MyCellRenderer cr = new MyCellRenderer();
+        questionsList.setCellRenderer(cr);
+        questionsList.setModel(listModel);
+        
+        configureDnD();
         /* set layout */
         mainPanel = setLayout();
         /* add listeners*/
@@ -356,11 +353,116 @@ public class QuestionSetTab {
         updateQuestionsList("DEL", question);
     }
     
+    private void configureDnD() {
+        questionsList.setDragEnabled(true);
+        questionsList.setDropMode(DropMode.INSERT);
+        questionsList.setTransferHandler(new ListTransferHandler(this));
+    } 
 
 }
 
-class MyCellRenderer extends JPanel implements ListCellRenderer {
+
+
+class ListTransferHandler extends TransferHandler{
+    QuestionSetTab qsTab;
+    Question q;
+    int index;
+
+   
+     ListTransferHandler(QuestionSetTab qsTab) {
+        //super();
+        this.qsTab = qsTab;
+       
+    }
+    public boolean canImport(TransferHandler.TransferSupport support) {
+        // for the demo, we'll only support drops (not clipboard paste)
+        System.out.println("aici in canImport");
+        if (!support.isDrop()) {
+            return false;
+        }
+        System.out.println("aici in canImport");
+        // we only import Strings
+        //if (!support.isDataFlavorSupported(new DataFlavor(Question.class, "Question"))) {
+        //    return false;
+        ///}
+        System.out.println("aici in canImport");
+        return true;
+    }
+    public boolean importData(TransferHandler.TransferSupport info) {
+        System.out.println("aici in importData");
+        if (!info.isDrop()) {
+            return false;
+        }
+        
+        String data;
+        try {
+            data = (String)info.getTransferable().getTransferData(DataFlavor.stringFlavor);
+        } catch (UnsupportedFlavorException e) {
+            return false;
+        } catch (java.io.IOException e) {
+            return false;
+        }
+        System.out.println(data);
+        QuestionSet newQS = QuestionSet.createFromXML(data);
+
+        QuestionSet oldQS = qsTab.getQuestionSet();
+        for (Iterator <Question> it = newQS.iterator(); it.hasNext(); ) {
+            
+            Question question = it.next();
+            oldQS.add(question);
+            qsTab.updateQuestionsList("ADD", question);
+        }
+            
+          
+        
+        // get the data that is being dropped(a Question object)
+      //  Transferable t = info.getTransferable();
+      //  Question data;
+      //  try {
+      //      data = (Question)t.getTransferData(new DataFlavor(Question.class, "Question"));
+      //  } 
+      //  catch (Exception e) { return false; }
+                                
+        // Perform the actual import.  
+         
+      //  qsTab.createQuestionPanel(data);
+      //  qsTab.updateQuestionsList("ADD", data);
+        return true;
+    }
+    public int getSourceActions(JComponent comp) {
+        System.out.println("aici in getSourceActions");
+        return COPY_OR_MOVE;
+    }
+    public Transferable createTransferable(JComponent comp) {
+        JList list = (JList)comp;
+        index = list.getSelectedIndex();
+        if (index < 0 || index >= list.getModel().getSize()) {
+            return null;
+        }
+        q = qsTab.getQuestion(index);
+        QuestionSet newQS = new QuestionSet();
+        newQS.add(q);
+        String data = newQS.toXML();
+        System.out.println("aici in createTransferable");
+      // return new DataHandler(q,"Question");
+        return new StringSelection(data);
+    }
+    public void exportDone(JComponent comp, Transferable trans, int action) {
+        System.out.println("aici in exportDone");
+       if (action != MOVE) {
+            return;
+        }
+        System.out.println("aici in exportDone");
+        qsTab.updateQuestionsList("DEL", q);
+    }
     
+    
+}
+/*To Do : mircea@bardac.net: mda... cred ca se poate verifica daca sursa e aceeasi cu destinatia
+mircea@bardac.net: si se poate ignora drag and drop-ul*/
+
+class MyCellRenderer extends JPanel implements ListCellRenderer {
+
     
     public MyCellRenderer() {
   

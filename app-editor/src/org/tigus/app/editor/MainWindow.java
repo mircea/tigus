@@ -93,7 +93,7 @@ public class MainWindow implements ActionListener {
         // menuItems 0->6  for fileMenu, menuItems 7->10 for questionMenu
         
         for (i = 0; i < 11; i++) {
-            // initialize the JMenuItems components
+            // initialize the JMenuItems components with text and icons
             menuItems[i] = new JMenuItem(menuItemsNames[i], new ImageIcon(iconNames[i]));   
             
             // add listeners to the JMenuItems components
@@ -179,13 +179,14 @@ public class MainWindow implements ActionListener {
         
         frame.add(toolBar, BorderLayout.PAGE_START);
         
-        // add main componenet: JTabbedPane
+        // add main component: JTabbedPane
         tabbedPane = new JTabbedPane();        
         
         tabbedPane.setPreferredSize(new Dimension(600,500));
         frame.add(tabbedPane);
         
     }
+    
     public JTabbedPane getTabbedPane() {
         return tabbedPane;
     }
