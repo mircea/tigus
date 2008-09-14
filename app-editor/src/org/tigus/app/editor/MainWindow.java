@@ -2,6 +2,7 @@ package org.tigus.app.editor;
 
 import org.tigus.core.*;
 import java.io.*;
+
 import javax.swing.*;
 
 import java.awt.event.*; 
@@ -13,8 +14,10 @@ import java.awt.*;
  * @author Adriana Draghici
  * 
  */
+
+
 public class MainWindow implements ActionListener {
-    
+ 
     /*
      * GUI components
      */
@@ -27,7 +30,8 @@ public class MainWindow implements ActionListener {
     JMenu toolsMenu;
     JButton []toolBarButtons;
     JTabbedPane tabbedPane;
-    
+ 
+    String author;  // the name of the person who uses this editor to create questions question sets
     Boolean empty ; // true if the no question set is loaded in the window
     Boolean untitled;   // true if the QS was created but saved.
     Boolean unsaved;    // true if the QS was modified but not saved
@@ -40,22 +44,28 @@ public class MainWindow implements ActionListener {
      * Class Constructor
      * @param none
      * @see JFrame
+     * 
+     *  
      */
     
     public MainWindow() {
-        //super("Question Editor");
+       
         frame = new JFrame("Question Editor");
        // SwingUtilities.updateComponentTreeUI(this);
         frame.setLocation(50,50);
         frame.setPreferredSize(new Dimension(700,550));
-        
-        // add components : menu, toolbar, tooltips, panel
+     
+        /* add components : menu, toolbar, tooltips, panel */
         initComponents();
+        
+        
+        author = getAuthor();
         untitled = true;
         unsaved = false;
         empty = true;
         qsPath = "";
-      
+        
+     
         frame.setTitle("Untitled - Question Editor");
         frame.setVisible(true);
         //frame.setDefaultLookAndFeelDecorated (true);
@@ -69,6 +79,8 @@ public class MainWindow implements ActionListener {
             }
         });        
     }
+    
+    
     
     /**
      * Initializes the frame's components: menus, toolbars and the tabbedpane as main panel
@@ -125,7 +137,7 @@ public class MainWindow implements ActionListener {
         menuItems[1].setMnemonic('O');
         menuItems[2].setMnemonic('S');
         menuItems[3].setMnemonic('A');
-        
+       
         fileMenu = new JMenu("File");
         questionMenu = new JMenu("Question");
         fileMenu.setMnemonic(KeyEvent.VK_F);
@@ -145,8 +157,9 @@ public class MainWindow implements ActionListener {
             menuItems[i].setEnabled(false);
         }
         JMenuItem preferencesMenuItem = new JMenuItem("Preferences");
+        preferencesMenuItem.addActionListener(this);
         toolsMenu = new JMenu("Tools");
-        fileMenu.setMnemonic(KeyEvent.VK_T);
+        toolsMenu.setMnemonic(KeyEvent.VK_T);
         toolsMenu.add(preferencesMenuItem);
         
         menuBar = new JMenuBar();
@@ -183,8 +196,46 @@ public class MainWindow implements ActionListener {
         tabbedPane = new JTabbedPane();        
         
         tabbedPane.setPreferredSize(new Dimension(600,500));
+        
+
         frame.add(tabbedPane);
         
+        
+        
+    }
+    /**
+     * Reads the author's name from the application's "editor.conf" file
+     * @param none
+     * @return if the author's name is unknows returns a string equal to "null" else returns a String with author's name.
+     */
+    public String getAuthor() {
+        try {
+            RandomAccessFile configFile = new RandomAccessFile("editor.conf", "rw");   
+          
+            byte[] bytes= new byte[(int)(configFile.length())];
+            configFile.readFully(bytes);
+            configFile.close(); 
+            
+            String s = new String(bytes);
+
+            if (!s.contains("AUTHOR:")) {
+                return "";
+            }
+            else {
+                int  beginIndex = s.indexOf("AUTHOR:") + 7;
+                int  endIndex = s.indexOf("/AUTHOR"); 
+                if(beginIndex < 0 || endIndex < 0) {
+                    System.err.println("wrong written file!");
+                    return "";
+                }
+                    
+                String name = s.substring(beginIndex, endIndex).trim();
+                return name;
+            }
+        }catch(Exception ex) {
+             ex.printStackTrace();
+             return "";
+        }
     }
     
     public JTabbedPane getTabbedPane() {
@@ -209,11 +260,12 @@ public class MainWindow implements ActionListener {
         
         if (command.equals("New")) {
             if (empty == false) {
-                MainWindow newWindow = new MainWindow();
+                MainWindow newWindow = new MainWindow();                
                 newWindow.showQuestionSet(new QuestionSet(), "");
                 return;
             }
             unsaved = true;
+           
             showQuestionSet(new QuestionSet(), "");               
         }
         
@@ -253,6 +305,7 @@ public class MainWindow implements ActionListener {
         if (command.equals("Save") && untitled == false) {
             try {
                 qs.saveToFile(qsPath);
+                
             } catch(IOException ex) {
                 ex.printStackTrace();
             }       
@@ -283,6 +336,7 @@ public class MainWindow implements ActionListener {
             
             try {
                 qs.saveToFile(qsPath);
+                System.out.println("dupa save!");
             } catch(IOException ex) {
                 ex.printStackTrace();
             }      
@@ -292,6 +346,17 @@ public class MainWindow implements ActionListener {
             
             return;
         }
+        
+        if (command.equals("Preferences")) {
+                
+            @SuppressWarnings("unused")
+            PreferencesWindow preferencesWindow = new PreferencesWindow();
+          
+            
+          
+        }
+        
+        
     }
     
     /**
@@ -320,6 +385,7 @@ public class MainWindow implements ActionListener {
     {
         if(name.length() > 0)
             frame.setTitle(name + " - Question Editor");
+        this.qs = qs;
         qsTab = new QuestionSetTab(this, qs, name);
         qsTab.initComponents();
         menuItems[7].setEnabled(true);

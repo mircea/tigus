@@ -496,6 +496,14 @@ public class QuestionTab {
                 String tagName = tagTextField.getText();
                 String tagValues = tagValueTextField.getText();
                 Boolean tagExists = tagsNames.contains(tagName);
+                
+                if(tagName.toLowerCase().equals("author")) {
+                    JOptionPane.showMessageDialog(mainPanel,
+                            "You are not allowed to modify author's name tag!", 
+                                "Error", JOptionPane.ERROR_MESSAGE);
+                       return;
+                }
+                
                 if (tagName.length() == 0) {
                     JOptionPane.showMessageDialog(mainPanel,
                          "Please insert the tag's name!", 
@@ -536,6 +544,13 @@ public class QuestionTab {
             public void actionPerformed(ActionEvent e) {
                 String tagName = (String)tagsComboBox.getSelectedItem();
                 
+                if(tagName.toLowerCase().equals("author")) {
+                    JOptionPane.showMessageDialog(mainPanel,
+                            "You are not allowed to delete author's name tag!", 
+                                "Error", JOptionPane.ERROR_MESSAGE);
+                       return;
+                }
+                
                 int value = JOptionPane.showConfirmDialog(mainPanel,
                         "Are you sure you want to remove " + tagName +"tag?",
                         "", JOptionPane.YES_NO_OPTION);
@@ -568,9 +583,14 @@ public class QuestionTab {
                question.setText(questionText);
          
                if(op.equals("EditQ")) {
+                   /* update author's name to tags list */  
+                   question.setTagValueList("author", qsTab.getAuthor());  
                    qsTab.updateQuestionsList("EDIT", question);
                }
                else if(op.equals("NewQ")) {
+                   /* add author's name to tags list */              
+                   question.setTagValueList("author", qsTab.getAuthor());                  
+         
                    qsTab.updateQuestionsList("ADD", question);
                }
                tabbedPane.removeTabAt(tabIndex);

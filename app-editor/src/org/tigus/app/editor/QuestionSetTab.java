@@ -6,8 +6,7 @@ import java.awt.datatransfer.*;
 import java.awt.event.*;
 import javax.swing.*;
 import javax.swing.event.*;
-import javax.activation.DataHandler;
-import javax.activation.ActivationDataFlavor;
+
 import java.util.*;
 
 import org.tigus.core.*;
@@ -66,6 +65,7 @@ public class QuestionSetTab {
      */
     public void updateQuestionsList(String op, Question question) {
         if (op.equals("ADD")) {
+                      
             questions.add(question);
             JPanel panel = createQuestionPanel(question);
             questionPanels.add(panel);  
@@ -302,7 +302,28 @@ public class QuestionSetTab {
             }
         });
     }
-       
+    public String getAuthor() {
+        String name = new String(mainWindow.getAuthor());
+        return name;
+    }
+    public String getAuthorTagValue(Question question) {
+        
+        TagSet tagSet = question.getTags();
+        Set <String> keys = tagSet.keySet();
+        
+        for (Iterator <String> it = keys.iterator(); it.hasNext(); ) {           
+           String tagName = new String(it.next());
+           if(tagName.toLowerCase().equals("author")) {
+               
+               Vector <String> values = new Vector<String>(tagSet.get(tagName));
+               
+               return values.elementAt(0);
+           }
+        }
+        return "";
+               
+    }
+    
     /**
      * Creates a QuestionTabAdd object for adding a new question
      * @param none
@@ -310,9 +331,17 @@ public class QuestionSetTab {
      */
     private void createQuestion() {
         
-        try{                
+        try{      
+            /*
+              The application's user can not create new questions unless 
+              she/he sets the author's name in "preferences" menu
+            */
+            String author = getAuthor();
+            
+            if (author.length() == 0) {
+                return;
+            }
             Question question = new Question();
-            //QuestionTabAdd qt = new QuestionTabAdd(this, tabbedPane, questionSet, qsName);
             QuestionTab qt = new QuestionTab("NewQ", this, tabbedPane,
                                                     question, questionSet, qsName);
             qt.initComponents();
@@ -325,13 +354,23 @@ public class QuestionSetTab {
      * @retun none
      */
     private void editQuestion() {
-        try{ 
-            // 
-            // testing QuestionTabEdit 
-            //
-            int index = questionsList.getSelectedIndex();
-            System.out.println("index = "+index);
+        try{   
+            
+            int index = questionsList.getSelectedIndex();       
             Question question = questions.elementAt(index);
+            /*   
+                The appplication's user can not edit a question unless 
+                he/she is the question's author
+            */
+           
+            if(!getAuthorTagValue(question).equals(getAuthor())) {
+               JOptionPane.showMessageDialog(mainPanel,
+                       "You can edit only your questions!", 
+                           "error", JOptionPane.ERROR_MESSAGE);
+               
+               return;
+            }
+            
             QuestionTab qt = new QuestionTab("EditQ", this, tabbedPane, 
                                                     question, questionSet, qsName);
             qt.initComponents();
@@ -347,12 +386,27 @@ public class QuestionSetTab {
      */
     private void deleteQuestion() {
         int index = questionsList.getSelectedIndex();
-        System.out.println("index = "+index);
         Question question = questions.elementAt(index);
+        
+        /*   
+            The appplication's user can not remove a question unless 
+            he/she is the question's author
+         */
+   
+        if(!getAuthorTagValue(question).equals(getAuthor())) {
+           JOptionPane.showMessageDialog(mainPanel,
+                   "You can edit only your questions!", 
+                       "error", JOptionPane.ERROR_MESSAGE);
+           
+           return;
+        }
+        
         questionSet.remove(question);
         updateQuestionsList("DEL", question);
     }
-    
+    /**
+     *  Enable and configure Drag And Drop in/from the questions list
+     */
     private void configureDnD() {
         questionsList.setDragEnabled(true);
         questionsList.setDropMode(DropMode.INSERT);
@@ -367,7 +421,7 @@ class ListTransferHandler extends TransferHandler{
     QuestionSetTab qsTab;
     Question q;
     int index;
-
+    private static final long serialVersionUID = 2L;
    
      ListTransferHandler(QuestionSetTab qsTab) {
         //super();
@@ -375,17 +429,12 @@ class ListTransferHandler extends TransferHandler{
        
     }
     public boolean canImport(TransferHandler.TransferSupport support) {
-        // for the demo, we'll only support drops (not clipboard paste)
+    
         System.out.println("aici in canImport");
         if (!support.isDrop()) {
             return false;
         }
-        System.out.println("aici in canImport");
-        // we only import Strings
-        //if (!support.isDataFlavorSupported(new DataFlavor(Question.class, "Question"))) {
-        //    return false;
-        ///}
-        System.out.println("aici in canImport");
+       
         return true;
     }
     public boolean importData(TransferHandler.TransferSupport info) {
@@ -402,6 +451,7 @@ class ListTransferHandler extends TransferHandler{
         } catch (java.io.IOException e) {
             return false;
         }
+        
         System.out.println(data);
         QuestionSet newQS = QuestionSet.createFromXML(data);
 
@@ -413,20 +463,6 @@ class ListTransferHandler extends TransferHandler{
             qsTab.updateQuestionsList("ADD", question);
         }
             
-          
-        
-        // get the data that is being dropped(a Question object)
-      //  Transferable t = info.getTransferable();
-      //  Question data;
-      //  try {
-      //      data = (Question)t.getTransferData(new DataFlavor(Question.class, "Question"));
-      //  } 
-      //  catch (Exception e) { return false; }
-                                
-        // Perform the actual import.  
-         
-      //  qsTab.createQuestionPanel(data);
-      //  qsTab.updateQuestionsList("ADD", data);
         return true;
     }
     public int getSourceActions(JComponent comp) {
@@ -444,12 +480,12 @@ class ListTransferHandler extends TransferHandler{
         newQS.add(q);
         String data = newQS.toXML();
         System.out.println("aici in createTransferable");
-      // return new DataHandler(q,"Question");
+   
         return new StringSelection(data);
     }
     public void exportDone(JComponent comp, Transferable trans, int action) {
         System.out.println("aici in exportDone");
-       if (action != MOVE) {
+        if (action != MOVE) {
             return;
         }
         System.out.println("aici in exportDone");
@@ -463,6 +499,7 @@ mircea@bardac.net: si se poate ignora drag and drop-ul*/
 
 class MyCellRenderer extends JPanel implements ListCellRenderer {
 
+    private static final long serialVersionUID = 3L;
     
     public MyCellRenderer() {
   
