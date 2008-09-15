@@ -33,6 +33,7 @@ public class QuestionSetTab {
     JList questionsList = new JList();    
     JButton addButton = new JButton("Add question");
     JButton editButton = new JButton("Edit Question");
+    JButton reviewButton = new JButton("Review Question");
     JButton deleteButton = new JButton("Delete question");    
     
     JPanel mainPanel = new JPanel();
@@ -248,7 +249,8 @@ public class QuestionSetTab {
         JScrollPane listPanel = new JScrollPane(questionsList);
         
         buttonsPanel.add(addButton);             
-        buttonsPanel.add(editButton);        
+        buttonsPanel.add(editButton); 
+        buttonsPanel.add(reviewButton); 
         buttonsPanel.add(deleteButton);        
         buttonsPanel.setLayout(new BoxLayout(buttonsPanel, BoxLayout.X_AXIS));        
              
@@ -279,7 +281,13 @@ public class QuestionSetTab {
                 editQuestion();
             }
         });
-        
+        reviewButton.addActionListener(new ActionListener()
+        {
+            public void actionPerformed(ActionEvent e) 
+            {
+                reviewQuestion();
+            }
+        });
         deleteButton.addActionListener(new ActionListener()
         {
             public void actionPerformed(ActionEvent e) 
@@ -356,7 +364,8 @@ public class QuestionSetTab {
     private void editQuestion() {
         try{   
             
-            int index = questionsList.getSelectedIndex();       
+            int index = questionsList.getSelectedIndex();   
+            if(index < 0) return;
             Question question = questions.elementAt(index);
             /*   
                 The appplication's user can not edit a question unless 
@@ -380,12 +389,39 @@ public class QuestionSetTab {
         
     }
     /**
+     * 
+     */
+    
+    private void reviewQuestion() {
+        int index = questionsList.getSelectedIndex();
+        if(index < 0) return;
+        Question question = questions.elementAt(index);
+        /*   
+            The appplication's user can not review his/her question 
+         */
+    
+        if(getAuthorTagValue(question).equals(getAuthor())) {
+           JOptionPane.showMessageDialog(mainPanel,
+                   "You can not review your question!", 
+                       "error", JOptionPane.ERROR_MESSAGE);
+           
+           return;
+        }
+        
+        @SuppressWarnings("unused")
+        ReviewQuestionTab rqTab = new ReviewQuestionTab(this, tabbedPane, 
+                                            question, questionSet);
+        
+        
+    }
+    /**
      * Removes the question selected from question set
      * @param none
      * @retun none
      */
     private void deleteQuestion() {
         int index = questionsList.getSelectedIndex();
+        if(index < 0) return;
         Question question = questions.elementAt(index);
         
         /*   

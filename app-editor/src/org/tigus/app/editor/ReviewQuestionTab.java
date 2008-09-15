@@ -7,6 +7,7 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.ItemEvent;
 import java.awt.event.ItemListener;
+import java.util.Date;
 import java.util.Iterator;
 import java.util.Set;
 import java.util.Vector;
@@ -22,33 +23,40 @@ import org.tigus.core.*;
  * @author adriana
  *
  */
-public class QuestionTab {
+public class ReviewQuestionTab {
+    
     int listIndex;
     int tabIndex;
     int correctCount;
     Boolean isCorrect;
     String state;
-    String op;  // the type of operation for which this tag was created : "NewQ" or "EditQ"
+    
+    QuestionSetTab qsTab;   
     QuestionSet questionSet;
     Question question;
     Question oldQuestion;
-    TagSet tagSet;
-    String qsName;
+    TagSet tagSet;    
+    String comment; // the comment of the review
 
     Vector <Answer> answers;
+    Vector <String> tagsNames = new Vector<String>();
+    DefaultListModel listModel = new DefaultListModel();
+    DefaultComboBoxModel comboBoxModel = new DefaultComboBoxModel();    
     
-    QuestionSetTab qsTab;
     /* Tab's components */
     
     JTabbedPane tabbedPane;
+    JPanel mainPanel;
+    
     JTextArea questionTextArea = new JTextArea();
     JTextArea answerTextArea = new JTextArea();   
+    JTextArea commentTextArea = new JTextArea();
     JTextField tagTextField = new JTextField();
     JTextField tagValueTextField = new JTextField();
-
-       
+    
     JButton newButton = new JButton("New answer");
     JButton deleteButton = new JButton("Delete answer");
+    JButton commentButton = new JButton("View/Edit Comment");
     JButton saveButton = new JButton("Apply");
     JButton tagButton = new JButton("Apply");
     JButton removeTagButton = new JButton("Remove tag");    
@@ -58,41 +66,34 @@ public class QuestionTab {
     JLabel tagValueLabel = new JLabel("");    
     JComboBox tagsComboBox = new JComboBox();    
     JCheckBox correctCheckBox = new JCheckBox("Correct");
-    
+    JList answersList;
+     
     JScrollPane answerScrollPane = new JScrollPane(answerTextArea);
     JScrollPane questionScrollPane = new JScrollPane(questionTextArea);
     JScrollPane listScrollPane;
-    
-    JPanel mainPanel;
-    Vector <String> tagsNames = new Vector<String>();
-    DefaultListModel listModel = new DefaultListModel();
-    DefaultComboBoxModel comboBoxModel = new DefaultComboBoxModel();
-    JList answersList;
- 
+    JScrollPane commentScrollPane = new JScrollPane(commentTextArea);
+   
     /**
      * Class's constructor
-     * @param op - indicates why this tab is created for editing a question: "EditQ", or for creating one: "NewQ"
      * @param qsTab - the question's QuestionSet
      * @param pane - the JTabbedPane object in which to add the new tab
      * @param question - the question to be edited
-     * @param qs - the QuestionSet object containing the question to be edited
-     * @param qsName - the name of the question set
+     * @param qs - the QuestionSet object containing the question to be edited    
      */ 
  
     
-    public QuestionTab(String op, QuestionSetTab qsTab, JTabbedPane pane, Question question , 
-                            QuestionSet qs, String qsName) {
+    public ReviewQuestionTab(QuestionSetTab qsTab, JTabbedPane pane, Question question , 
+                            QuestionSet qs) {
         this.qsTab = qsTab;
         this.tabbedPane = pane;   
         this.question = question;
-        oldQuestion = question;
-        this.questionSet = qs;
-        this.qsName = qsName;
-        this.op = op;
+        oldQuestion = new Question(question);
+        this.questionSet = qs;     
+   
         isCorrect = false; 
         state = "ADD"; 
         correctCount = 0;
-        //initComponents();
+        initComponents();
     }
     
     /**
@@ -100,13 +101,6 @@ public class QuestionTab {
      */
     private void showAnswers() {
         answers = new Vector<Answer>(question.getAnswers());
-        
-        if(op.equals("NewQ")) {
-            answersList = new JList(listModel);
-            listIndex = -1;
-            return;
-        }
-        
         
         // build a list model containing the question's answer 
         String s;
@@ -134,7 +128,7 @@ public class QuestionTab {
     private void updateAnswersList(Boolean c, String text, int index) {
         
          if (state.equals("ADD")) { 
-         
+     
             answers.addElement(new Answer(c, text));  
             
             String s = new String();
@@ -148,7 +142,7 @@ public class QuestionTab {
             listModel.addElement(s + text +"</ul></html>");         
             answersList.setSelectedIndex(answers.size()-1); 
             
-            state = "EDIT";       
+            state = "EDIT";      
             return;
         }
         
@@ -201,7 +195,8 @@ public class QuestionTab {
         tagsComboBox.setEditable(false);
         tagsComboBox.setSelectedItem(0);
        
-        showTagValues((String)tagsComboBox.getSelectedItem());         
+        showTagValues((String)tagsComboBox.getSelectedItem());
+         
     }
     
     /**
@@ -224,6 +219,17 @@ public class QuestionTab {
     }
     
     /**
+     * Used to set which components of the tab are visible. The components
+     * are the answerTextArea, the checkBox, and commentTextArea.     * 
+     */
+    
+    private void hide(Boolean hideAnswerPane, Boolean hideCheckbox, Boolean hideComment) {
+        answerScrollPane.setVisible(hideAnswerPane);
+        correctCheckBox.setVisible(hideCheckbox);
+        commentScrollPane.setVisible(hideComment);       
+    }
+    
+    /**
      * Initializes the main panel's components and containers 
      * by setting their size, their layout and their listeners.
      * @params none
@@ -232,9 +238,9 @@ public class QuestionTab {
     
     public void initComponents() {
         
-        questionTextArea.setText(question.getText());    
+        questionTextArea.setText(question.getText()); 
         showAnswers();
-        showTags();       
+        showTags();  
         
         /*
          * set components size
@@ -242,6 +248,7 @@ public class QuestionTab {
         
         newButton.setPreferredSize(new Dimension(100,25));
         deleteButton.setPreferredSize(new Dimension(100,25));
+        commentButton.setPreferredSize(new Dimension(100,25));
         saveButton.setPreferredSize(new Dimension(100,25));
         tagButton.setPreferredSize(new Dimension(100,25));
         removeTagButton.setPreferredSize(new Dimension(200,25));
@@ -258,10 +265,10 @@ public class QuestionTab {
         
         /* set components layout */        
         
-        mainPanel = setLayout();         
+        mainPanel = setLayout(); 
         
-        /* add new tab */        
-        
+        /* add new tab */
+                
         tabbedPane.addTab("Question", mainPanel);
         tabIndex = tabbedPane.getTabCount() -1;
         tabbedPane.setSelectedIndex(tabIndex); //set focus
@@ -269,6 +276,8 @@ public class QuestionTab {
         /* add listeners */
         
         addListeners();
+          
+       
     }
     
     /**
@@ -288,23 +297,28 @@ public class QuestionTab {
         questionScrollPane.setAlignmentX(java.awt.Component.LEFT_ALIGNMENT);
         listScrollPane.setAlignmentX(java.awt.Component.LEFT_ALIGNMENT);
         answerScrollPane.setAlignmentX(java.awt.Component.LEFT_ALIGNMENT);
+        commentScrollPane.setAlignmentX(java.awt.Component.LEFT_ALIGNMENT);
         correctCheckBox.setAlignmentX(java.awt.Component.LEFT_ALIGNMENT);
         saveButton.setAlignmentX(java.awt.Component.LEFT_ALIGNMENT);        
       
         questionScrollPane.setBorder(BorderFactory.createTitledBorder("Text"));
+        commentScrollPane.setBorder(BorderFactory.createTitledBorder("Comment"));
         listScrollPane.setBorder(BorderFactory.createTitledBorder("Answers List"));
        
         buttonsPanel.add(newButton);
         buttonsPanel.add(deleteButton);
+        buttonsPanel.add(commentButton);
         buttonsPanel.setLayout(new BoxLayout(buttonsPanel, BoxLayout.X_AXIS));
         buttonsPanel.setAlignmentX(java.awt.Component.LEFT_ALIGNMENT);
         
         answerPanel.add(buttonsPanel); 
         answerPanel.add(correctCheckBox);
         answerPanel.add(answerScrollPane);
+        answerPanel.add(commentScrollPane);
         answerPanel.add(saveButton);
         answerPanel.setBorder(BorderFactory.createTitledBorder("Answer"));
-        answerPanel.setLayout(new BoxLayout(answerPanel, BoxLayout.Y_AXIS));        
+        answerPanel.setLayout(new BoxLayout(answerPanel, BoxLayout.Y_AXIS));
+        commentScrollPane.setVisible(false);
         
         JPanel gPanel = new JPanel(); 
         gPanel.setLayout(new GridLayout(0,2));
@@ -328,13 +342,11 @@ public class QuestionTab {
         
         tagsPanel.setLayout(new BoxLayout(tagsPanel, BoxLayout.Y_AXIS));
         tagsPanel.setAlignmentX(java.awt.Component.LEFT_ALIGNMENT);
-        tagsPanel.setBorder(BorderFactory.createTitledBorder("Tags"));
-        
+        tagsPanel.setBorder(BorderFactory.createTitledBorder("Tags"));        
         
         confirmPanel.add(okButton);
         confirmPanel.add(cancelButton);     
-        confirmPanel.setAlignmentX(java.awt.Component.LEFT_ALIGNMENT);
-        
+        confirmPanel.setAlignmentX(java.awt.Component.LEFT_ALIGNMENT);        
         
         verticalPanel.add(questionScrollPane);       
         verticalPanel.add(listScrollPane);
@@ -350,6 +362,7 @@ public class QuestionTab {
      * Add listeners to the class's GUI components (buttons, checkbox, list, combobox)
      * @params none
      */
+    
     private void addListeners() {
         
         answersList.addListSelectionListener(new ListSelectionListener() {
@@ -363,7 +376,7 @@ public class QuestionTab {
                 listIndex = newIndex;
                 if (state.equals("DEL")) {
                     answerTextArea.setText("");
-                    correctCheckBox.setSelected(false);        
+                    correctCheckBox.setSelected(false);
                     return;
                 }
                 state = "EDIT";                
@@ -373,7 +386,10 @@ public class QuestionTab {
                 
                 // sets the component's content
                 answerTextArea.setText(answerText);
-               
+                correctCheckBox.setVisible(true);               
+                commentScrollPane.setVisible(false);
+                answerScrollPane.setVisible(true);
+                
                 if (answers.elementAt(listIndex).isCorrect()) {
                     correctCheckBox.setSelected(true);
                     isCorrect = true;
@@ -382,6 +398,7 @@ public class QuestionTab {
                     correctCheckBox.setSelected(false);
                     isCorrect = false;
                 }
+             
             }
         });
         
@@ -401,15 +418,19 @@ public class QuestionTab {
                 else {                    
                     isCorrect = false;
                 }
+                
             }
+            
         }) ;
         
         newButton.addActionListener(new ActionListener() { 
             public void actionPerformed(ActionEvent e) {
                 state = "ADD";
-                answerTextArea.setText("");
-                correctCheckBox.setSelected(false);                     
-            }
+                answerTextArea.setText("");           
+                correctCheckBox.setSelected(false); 
+                /* show the text area for writing answers and the checkbox*/
+                hide(true,true,false);
+             }
         });
         
         deleteButton.addActionListener(new ActionListener() { 
@@ -430,9 +451,19 @@ public class QuestionTab {
                question.getAnswers().remove(new Answer(
                                    answers.elementAt(listIndex).isCorrect(), answerText));
               
-               updateAnswersList(null, null, listIndex); 
+               updateAnswersList(null, null, listIndex);
             }
         });
+        
+        commentButton.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent e) {                
+                state = "REVIEW";
+                /* show the textarea for writing and displaying comments, hide the one for
+                   the answers and the checkbox */
+                hide(false, false, true);   
+                commentTextArea.setText(comment);                
+            }             
+         });
         
         saveButton.addActionListener(new ActionListener() {
            public void actionPerformed(ActionEvent e) {
@@ -445,11 +476,13 @@ public class QuestionTab {
                                "", JOptionPane.ERROR_MESSAGE);
                    return;
                }
+               
                if (isCorrect) {
                    System.out.println("correct count before ++ = " + correctCount);
                    correctCount ++;
                    
                }
+               
                if(state.equals("EDIT")) {
                    if(!isCorrect &&  answers.elementAt(listIndex).isCorrect()) {
                        // a correct answer was marked as not correct
@@ -465,20 +498,26 @@ public class QuestionTab {
                    return;
                }
                
-               if(state == "ADD") {                 
-                   question.addAnswer(isCorrect, answerText);           
+               if(state == "ADD") {              
+                   question.addAnswer(isCorrect, answerText);              
                    updateAnswersList(isCorrect, answerText, 0);
                }
                
-               if(state == "EDIT") {
-           
+               if(state == "EDIT") {         
                    question.getAnswers().set(listIndex, new Answer(isCorrect, answerText));               
                    updateAnswersList(isCorrect, answerText, listIndex);
-               }               
+               }
                
+               if(state == "REVIEW") {                    
+                   comment = commentTextArea.getText();  
+                   /* show the text area for writing answers and the checkbox,
+                      hide the textarea for editing comments    */
+                   hide(true,true,false);    
+               }
+               
+               /* the default state is "EDIT"   */
                state = "EDIT";
-           }
-            
+           }            
         });
         
         tagButton.addActionListener(new ActionListener() {
@@ -570,19 +609,16 @@ public class QuestionTab {
                }
                
                question.setText(questionText);
-         
-               if(op.equals("EditQ")) {
-                   /* update author's name to tags list */  
-                   question.setTagValueList("author", qsTab.getAuthor());  
-                   qsTab.updateQuestionsList("EDIT", question);
-               }
-               else if(op.equals("NewQ")) {
-                   /* add author's name to tags list */              
-                   question.setTagValueList("author", qsTab.getAuthor());                  
-         
-                   qsTab.updateQuestionsList("ADD", question);
-               }
-               tabbedPane.removeTabAt(tabIndex);               
+               
+               Review review = new Review(new Date(), qsTab.getAuthor(), 
+                                           comment, oldQuestion, question);
+               
+               question.addReview(review);
+               
+               qsTab.updateQuestionsList("EDIT", question);
+               
+               tabbedPane.removeTabAt(tabIndex);
+               
            }
         });
         
@@ -593,8 +629,9 @@ public class QuestionTab {
                         "", JOptionPane.YES_NO_OPTION);
                
                 if (value == JOptionPane.YES_OPTION) {
-                    // no changes are saved
-                    question = new Question(oldQuestion);
+                    
+                    // no changes are applied to the question!
+                    question = oldQuestion;
                     tabbedPane.removeTabAt(tabIndex);
                 }                   
             }

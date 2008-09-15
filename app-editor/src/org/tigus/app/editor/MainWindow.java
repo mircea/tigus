@@ -111,7 +111,10 @@ public class MainWindow implements ActionListener {
             // add listeners to the JMenuItems components
             menuItems[i].addActionListener(this);
         }
-              
+        // disable "Save"/ "Save as" until a question set is loaded or created.
+        menuItems[2].setEnabled(false);
+        menuItems[3].setEnabled(false);
+        
         // add tooltips to the JMenuItems components
         menuItems[0].setToolTipText("Create a new question set");
         menuItems[1].setToolTipText("Select a question set and load its content");
@@ -164,7 +167,7 @@ public class MainWindow implements ActionListener {
         
         menuBar = new JMenuBar();
         menuBar.add(fileMenu);
-        menuBar.add(questionMenu);
+       // menuBar.add(questionMenu);
         menuBar.add(toolsMenu);
         
         frame.setJMenuBar(menuBar);   
@@ -261,12 +264,12 @@ public class MainWindow implements ActionListener {
         if (command.equals("New")) {
             if (empty == false) {
                 MainWindow newWindow = new MainWindow();                
-                newWindow.showQuestionSet(new QuestionSet(), "");
+                newWindow.showQuestionSet(new QuestionSet(), "", "");
                 return;
             }
             unsaved = true;
            
-            showQuestionSet(new QuestionSet(), "");               
+            showQuestionSet(new QuestionSet(), "", "");               
         }
         
         if (command.equals("Open...")) { 
@@ -291,15 +294,12 @@ public class MainWindow implements ActionListener {
             
             if (empty == false) {
                 MainWindow newWindow = new MainWindow();
-                newWindow.showQuestionSet(qs, qsName);
+                newWindow.showQuestionSet(qs, qsName, path);
                 return;
             }
             
-            qsPath = path;
-            
-            showQuestionSet(qs, qsName);
-            return;
-            
+            showQuestionSet(qs, qsName, path);
+            return;            
         }
         
         if (command.equals("Save") && untitled == false) {
@@ -352,8 +352,6 @@ public class MainWindow implements ActionListener {
             @SuppressWarnings("unused")
             PreferencesWindow preferencesWindow = new PreferencesWindow();
           
-            
-          
         }
         
         
@@ -381,17 +379,26 @@ public class MainWindow implements ActionListener {
         }
         
     }
-    private void showQuestionSet(QuestionSet qs, String name)
+    private void showQuestionSet(QuestionSet qs, String name, String path)
     {
         if(name.length() > 0)
             frame.setTitle(name + " - Question Editor");
         this.qs = qs;
+        qsPath = path;
+        
         qsTab = new QuestionSetTab(this, qs, name);
         qsTab.initComponents();
+        
         menuItems[7].setEnabled(true);
         menuItems[8].setEnabled(true);
         menuItems[9].setEnabled(true);
+        
         empty = false;
+        untitled = false;
+        
+        // enable "Save" / "Save As" menu items
+        menuItems[2].setEnabled(true);
+        menuItems[3].setEnabled(true);
     }  
     
   
