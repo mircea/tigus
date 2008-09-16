@@ -20,7 +20,7 @@ import javax.swing.event.ListSelectionListener;
 import org.tigus.core.*;
 
 /**
- * @author adriana
+ * @author Adriana Draghici
  *
  */
 public class ReviewQuestionTab {
@@ -93,6 +93,7 @@ public class ReviewQuestionTab {
         isCorrect = false; 
         state = "ADD"; 
         correctCount = 0;
+        comment = " ";
         initComponents();
     }
     
@@ -102,7 +103,7 @@ public class ReviewQuestionTab {
     private void showAnswers() {
         answers = new Vector<Answer>(question.getAnswers());
         
-        // build a list model containing the question's answer 
+        /* build a list model containing the question's answer */
         String s;
         for(int i = 0; i < answers.size(); i++){
             if (answers.elementAt(i).isCorrect() == true){
@@ -112,7 +113,7 @@ public class ReviewQuestionTab {
             else s = "<html><ul><li type=disc> ";
             listModel.addElement(s + answers.elementAt(i).getText()+"</ul></html>");
         }
-        // add the list model to the list component
+        /* add the list model to the list component */
         answersList = new JList(listModel);
         listIndex = -1;
     }
@@ -175,7 +176,7 @@ public class ReviewQuestionTab {
      */
     private void showTags() {
       
-        // get tags
+        /* get tags */
         tagSet = question.getTags(); 
         if (tagSet.isEmpty()) {
             tagsComboBox.setModel(comboBoxModel);
@@ -183,7 +184,7 @@ public class ReviewQuestionTab {
         }
         Set <String> keys = tagSet.keySet();
         
-        // insert tags' names into comboBox
+        /* insert tags' names into comboBox */
        
         for (Iterator <String> it = keys.iterator(); it.hasNext(); ) {           
            String tagName = new String(it.next());
@@ -205,7 +206,7 @@ public class ReviewQuestionTab {
      */
     private void showTagValues(String tagName) {        
         System.out.println("la showTagValues() tagName = " + tagName);        
-        // get tag's values
+        /* get tag's values */
         Vector <String> values = new Vector<String>(tagSet.get(tagName));
         String text = new String();
         text += values.elementAt(0);
@@ -231,9 +232,7 @@ public class ReviewQuestionTab {
     
     /**
      * Initializes the main panel's components and containers 
-     * by setting their size, their layout and their listeners.
-     * @params none
-     * @return none
+     * by setting their size, their layout and their listeners.    
      */
     
     public void initComponents() {
@@ -281,8 +280,7 @@ public class ReviewQuestionTab {
     }
     
     /**
-     * Places the class's GUI components into panels
-     * @params none
+     * Places the class's GUI components into panels    
      * @return JPanel object
      */
     private JPanel setLayout() {
@@ -316,7 +314,6 @@ public class ReviewQuestionTab {
         answerPanel.add(answerScrollPane);
         answerPanel.add(commentScrollPane);
         answerPanel.add(saveButton);
-        answerPanel.setBorder(BorderFactory.createTitledBorder("Answer"));
         answerPanel.setLayout(new BoxLayout(answerPanel, BoxLayout.Y_AXIS));
         commentScrollPane.setVisible(false);
         
@@ -359,8 +356,7 @@ public class ReviewQuestionTab {
     }
     
     /**
-     * Add listeners to the class's GUI components (buttons, checkbox, list, combobox)
-     * @params none
+     * Add listeners to the class's GUI components (buttons, checkbox, list, combobox) 
      */
     
     private void addListeners() {
@@ -384,12 +380,10 @@ public class ReviewQuestionTab {
                 System.out.println("index : " + listIndex);
                 String answerText = answers.elementAt(listIndex).getText();
                 
-                // sets the component's content
+                /* sets the component's content */
                 answerTextArea.setText(answerText);
-                correctCheckBox.setVisible(true);               
-                commentScrollPane.setVisible(false);
-                answerScrollPane.setVisible(true);
-                
+                hide(true, true, false);
+                         
                 if (answers.elementAt(listIndex).isCorrect()) {
                     correctCheckBox.setSelected(true);
                     isCorrect = true;
@@ -558,11 +552,11 @@ public class ReviewQuestionTab {
                     comboBoxModel.removeElement(tagName);                    
                 }
                 
-                // modify the question then modify the comboBoxModel! 
+                /* modify the question then modify the comboBoxModel!   */ 
                 question.setTagValueList(tagName, tagValues);                  
                 comboBoxModel.addElement(tagName);
                 
-                // clear components
+                /* clear components */
                 tagTextField.setText("");
                 tagValueTextField.setText("");
             }            

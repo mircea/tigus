@@ -4,6 +4,7 @@ import java.awt.*;
 import java.awt.dnd.*;
 import java.awt.datatransfer.*;
 import java.awt.event.*;
+
 import javax.swing.*;
 import javax.swing.event.*;
 
@@ -16,17 +17,19 @@ import org.tigus.core.*;
  * @author Adriana Draghici
  *
  */
-public class QuestionSetTab {
-    
+public class QuestionSetTab {    
     
     MainWindow mainWindow;
     JTabbedPane tabbedPane;
     QuestionSet questionSet;
     String qsName;
     int listIndex;
+    
     Vector <Question> questions = new Vector<Question>();
     Vector <JPanel> questionPanels = new Vector<JPanel>();
     Vector <TagSet> tags = new Vector<TagSet>();
+    HashMap <String,Vector<Question>> questionsTags = new HashMap <String, Vector<Question>>();
+    
     DropTarget dt;
     DragSource ds;
     
@@ -34,15 +37,26 @@ public class QuestionSetTab {
     JButton addButton = new JButton("Add question");
     JButton editButton = new JButton("Edit Question");
     JButton reviewButton = new JButton("Review Question");
-    JButton deleteButton = new JButton("Delete question");    
+    JButton deleteButton = new JButton("Delete question");
+    
+    JLabel label1 = new JLabel("Filer criteria:");
+    JLabel label2 = new JLabel("Tags:");
+ 
+    JComboBox typeComboBox = new JComboBox();
+    JComboBox tagsComboBox = new JComboBox();
+    JTextField filterTextField = new JTextField();
+    JButton filterButton  = new JButton("Filter");
     
     JPanel mainPanel = new JPanel();
+    JPanel filterPanel = new JPanel();
     DefaultListModel listModel = new DefaultListModel();
- 
+    DefaultListModel filteredListModel = new DefaultListModel();
+    DefaultComboBoxModel typeCBModel = new DefaultComboBoxModel();
+    DefaultComboBoxModel tagsCBModel = new DefaultComboBoxModel();
     
     /**
      * Constructor
-     * @param tabbedPane - the tabbed pane in which to add this classes's panel
+     * @param mainWindow - the MainWindow in which to add this tab
      * @param qs - the QuestionSet object to be displayed
      * @param qsName - the question set's name
      */
@@ -54,10 +68,9 @@ public class QuestionSetTab {
         questionSet = qs;
         this.qsName = qsName;
         listIndex = -1;
-        //initComponents();
+        initComponents();
         
-    }
-    
+    }    
    
     /**
      * Updates the objects that keep the questions, including the JList objects that displays them
@@ -72,7 +85,10 @@ public class QuestionSetTab {
             questionPanels.add(panel);  
             listModel.addElement(panel);
             
-            
+            if(questions.size() == 1) {
+                filterPanel.setVisible(true);
+            }
+            mainWindow.questionSetChanged();
             return;
         }
         
@@ -86,7 +102,7 @@ public class QuestionSetTab {
       
             questionPanels.setElementAt(panel, index);
             listModel.setElementAt(panel, index);
-            
+            mainWindow.questionSetChanged();
             return;
         }
         
@@ -96,11 +112,17 @@ public class QuestionSetTab {
             questionPanels. removeElementAt(index);
            
             System.out.println("listModel.indexOf(question) = " + index);
-            listModel.removeElementAt(index);            
+            listModel.removeElementAt(index);
+            
+            if(questions.size() == 0) {
+                filterPanel.setVisible(false);
+            }
+            
+            // tells the main window that unsaved changes were made
+            mainWindow.questionSetChanged();
         }
         
-        // announces the main window that unsaved changes were made
-        mainWindow.questionSetChanged();
+        
     }
     /**
      * Creates a panel showing the question's text and it's answers.
@@ -109,48 +131,46 @@ public class QuestionSetTab {
      */
     public JPanel createQuestionPanel(Question question) {
         
-        // get answers
+        /* get answers  */
         Vector <Answer> answers = new Vector<Answer>(question.getAnswers());
         String answersText = "<html><ul>";            
         
-        for (int j = 0; j < answers.size(); j++) {
+        for (Answer answer : answers) {
             answersText += "<li ";
-            if (answers.elementAt(j).isCorrect() == true){
+            if (answer.isCorrect() == true){
                 answersText +=  "type=circle> correct    : ";
             }
             else answersText += "type=disc> incorrect   : ";
-            answersText += answers.elementAt(j).getText();
+            answersText += answer.getText();
             answersText += "<br>";
         }
         answersText += "</ul></html>>";
         
-        System.out.println("answers:" + answersText);    
-        // get tags
+        System.out.println("answers:" + answersText);  
+        
+        /* get tags */
+        
         TagSet tagSet = question.getTags(); 
         tags.addElement(tagSet);
 
-        // create question's panel
+        /* create question's panel  */
         
         JPanel p = new JPanel();
         p.add(new JLabel(question.getText()));
    
         p.add(new JLabel(answersText));    
-        p.add(new JLabel(showTags(tagSet)));
+        p.add(new JLabel(showTags(question)));
         p.setLayout(new BoxLayout(p, BoxLayout.Y_AXIS));
-        return p;
-    
+        return p;    
     }
+    
     /**
-     * Initializes the objects containing the questions 
-     * @params none
-     * @return none
+     * Initializes the objects containing the questions  
      */
     public void createQuestionsList() {
-        /*
-         * create panels for each question 
-         * !!! not yet finished, it can show correctly only a QS with one question
-         */
-       
+        
+        /* create panels for each question  */
+        
         int qsSize = questionSet.size();
         System.out.println("question set size:" + qsSize);
   
@@ -166,39 +186,55 @@ public class QuestionSetTab {
             JPanel p = createQuestionPanel(question);   
             
             questionPanels.add(p);
-            listModel.addElement(p);      
-            
+            listModel.addElement(p); 
             i++;
         }
-        
-
     }
     
-
     /**
-     * Shows the selected question's tags in the panel's combo box
-     * @param index - item selected from the list
+     * Builds a html string containing a question's tags and their values, and
+     * creates a hashmap object with tag's name+value as key, and the question as it's value
+     * @param tagSet - the question's set of tags
+     * @return String object represintg tags and their values
      */
-    public String showTags(TagSet tagSet) {
-        // get tags
-
+    private String showTags(Question question) {
+        
+        /* get tags */
+        TagSet tagSet = question.getTags();
         Set <String> keys = tagSet.keySet();
-        String text = "<html><DL><DT> Tags: <br>";
-        // insert tags' names into comboBox
+        String text = "<html><DL><DT> Tags: <br>";       
         
         for (Iterator <String> it = keys.iterator(); it.hasNext(); ) {           
            String tagName = new String(it.next());
+           
+           
+           /* builds the string as tagName: values */
            text += "<DD>";
            text += tagName;
            text += ": ";
            Vector <String> values = new Vector<String>(tagSet.get(tagName));
-           text += values.elementAt(0);
-           for (int i = 1; i < values.size(); i++){                    
-               text += ", ";
-               text += values.elementAt(i);
+           Boolean first  = true; // used for identifying first value 
+           for (String val : values){
+               if(!first) 
+                   text += ", ";             
+               else
+                   first = false;
+               
+               text += val;               
+               
+               /* add to a HashMap object the "tag_name+value" as a key 
+                  and append the question it's value */
+               Vector <Question> v = questionsTags.get(tagName+"+"+val);
+               if(v == null) {
+                   v = new Vector<Question>();
+               }
+               // avoid duplicates
+               if(!v.contains(question)) {
+                   v.addElement(question);               
+                   questionsTags.put(tagName+"+"+val, v);
+               }
            }
-           text += "<br>";
-          
+           text += "<br>";          
         } 
         text += "</DL> </html>";
         
@@ -208,112 +244,25 @@ public class QuestionSetTab {
     public Question getQuestion(int index) {
         return questions.elementAt(index);
     }
+    
     public QuestionSet getQuestionSet() {
         return questionSet;
     }
-     /**
-     * Initializes the GUI components
-     * @param none
-     * @return none
-     * 
-     */
-    public void initComponents() {   
-        
-        tabbedPane.repaint();
-      
-        
-        /* create JList object for displaying questions*/
-        createQuestionsList();
-        MyCellRenderer cr = new MyCellRenderer();
-        questionsList.setCellRenderer(cr);
-        questionsList.setModel(listModel);
-        
-        configureDnD();
-        /* set layout */
-        mainPanel = setLayout();
-        /* add listeners*/
-        addListeners();
-        /* add panel to tabbedpane*/
-        tabbedPane.addTab("QS",  mainPanel);
-        
-    } 
     
     /**
-     * Set layout
-     * @param none
-     * @return JPanel object
+     * Returns the author's name, as it is saved in the application's configuration file
+     * @return String object representing the author's name
      */
-    private JPanel setLayout() {
-        JPanel panel  = new JPanel();
-        JPanel buttonsPanel  = new JPanel(); 
-        JScrollPane listPanel = new JScrollPane(questionsList);
-        
-        buttonsPanel.add(addButton);             
-        buttonsPanel.add(editButton); 
-        buttonsPanel.add(reviewButton); 
-        buttonsPanel.add(deleteButton);        
-        buttonsPanel.setLayout(new BoxLayout(buttonsPanel, BoxLayout.X_AXIS));        
-             
-        panel.add(buttonsPanel);
-        panel.add(listPanel);
-        panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
-        
-        return panel;
-    }
-    /** 
-     * Add buttons' listeners
-     * @param none
-     * @param none
-     */
-    private void addListeners() {
-        addButton.addActionListener(new ActionListener()
-        {
-            public void actionPerformed(ActionEvent e) 
-            {
-                createQuestion();
-            }
-        });
-        
-        editButton.addActionListener(new ActionListener()
-        {
-            public void actionPerformed(ActionEvent e) 
-            {
-                editQuestion();
-            }
-        });
-        reviewButton.addActionListener(new ActionListener()
-        {
-            public void actionPerformed(ActionEvent e) 
-            {
-                reviewQuestion();
-            }
-        });
-        deleteButton.addActionListener(new ActionListener()
-        {
-            public void actionPerformed(ActionEvent e) 
-            {
-                deleteQuestion();
-            }
-        });
-        
-        
-        questionsList.addListSelectionListener(new ListSelectionListener() {
-
-            public void valueChanged(ListSelectionEvent e) {
-                int index = questionsList.getSelectedIndex();
-                if(index == listIndex) {
-                    return;
-                }
-                listIndex = index;
-             //   showTags(index);
-             
-            }
-        });
-    }
     public String getAuthor() {
         String name = new String(mainWindow.getAuthor());
         return name;
     }
+    
+    /**
+     * Returns the author's name as it is saved in the question's "author" tag
+     * @param question The question selected from the question set
+     * @return String object representing the author's name
+     */
     public String getAuthorTagValue(Question question) {
         
         TagSet tagSet = question.getTags();
@@ -331,11 +280,194 @@ public class QuestionSetTab {
         return "";
                
     }
+     /**
+     * Initializes GUI components of this tab
+     */
+    public void initComponents() {   
+        
+        tabbedPane.repaint();
+      
+        
+        /* create JList object for displaying questions*/
+        createQuestionsList();
+        MyCellRenderer cr = new MyCellRenderer();
+        questionsList.setCellRenderer(cr);
+        questionsList.setModel(listModel);
+        
+        configureDnD();
+        if(questions.size() == 0) {
+            filterPanel.setVisible(false);
+        }
+   
+        initComboBoxes();       
+        
+        /* set components' size*/
+        setSize();
+        
+        /* set layout */
+        mainPanel = setLayout();
+        
+        /* add listeners*/
+        addListeners();
+        
+        /* add panel to tabbedpane*/
+        tabbedPane.addTab("QS",  mainPanel);
+        
+    } 
     
     /**
-     * Creates a QuestionTabAdd object for adding a new question
-     * @param none
-     * @retun none
+     *  Enable and configure Drag And Drop in/from the questions list
+     */
+    private void configureDnD() {
+        questionsList.setDragEnabled(true);
+        questionsList.setDropMode(DropMode.INSERT);
+        questionsList.setTransferHandler(new ListTransferHandler(this));
+    } 
+    
+    private void initComboBoxes() {
+        
+        typeCBModel.addElement("Text");
+        typeCBModel.addElement("Tags");
+        typeCBModel.addElement("answers");        
+        typeComboBox.setModel(typeCBModel);
+        typeComboBox.setEditable(false);
+        typeComboBox.setSelectedItem(0);
+        
+        tagsCBModel.addElement("author");
+        tagsCBModel.addElement("difficulty");
+        tagsCBModel.addElement("chapter");
+        tagsCBModel.addElement("Other tag...");
+        tagsComboBox.setModel(tagsCBModel);
+       // tagsComboBox.setEditable(true);    
+        tagsComboBox.setEnabled(false);
+    }
+    
+    private void setSize() {
+        typeComboBox.setPreferredSize(new Dimension(60,25));
+        typeComboBox.setMaximumSize(new Dimension(60,25));
+        tagsComboBox.setPreferredSize(new Dimension(60,25));
+        tagsComboBox.setMaximumSize(new Dimension(60,25));
+        filterTextField.setPreferredSize(new Dimension(60,25));
+        filterTextField.setMaximumSize(new Dimension(60,25));
+        filterButton.setPreferredSize(new Dimension(60,25));
+        filterButton.setMaximumSize(new Dimension(60,25));  
+        label1.setPreferredSize(new Dimension(60,25));
+        label1.setMaximumSize(new Dimension(60,25));     
+        label2.setPreferredSize(new Dimension(60,25));
+        label2.setMaximumSize(new Dimension(60,25)); 
+    }
+    
+    /**
+     * Sets layout
+     * @return JPanel object
+     */
+    private JPanel setLayout() {
+        JPanel panel  = new JPanel();
+        JPanel buttonsPanel  = new JPanel(); 
+        JScrollPane listPanel = new JScrollPane(questionsList);
+        
+        buttonsPanel.add(addButton);             
+        buttonsPanel.add(editButton); 
+        buttonsPanel.add(reviewButton); 
+        buttonsPanel.add(deleteButton);        
+        buttonsPanel.setLayout(new BoxLayout(buttonsPanel, BoxLayout.X_AXIS));        
+        
+        filterPanel.setLayout(new GridLayout(2,4,2,0)); // 2 rows, 4 columns,
+                                                        // 2 - size of horizontal gap, 
+                                                        // 0 - size of vertical gap
+        filterPanel.add(label1);
+        filterPanel.add(label2);
+        JLabel emptylabel1 = new JLabel(" ");
+        emptylabel1.setMaximumSize(new Dimension(100,25));
+        JLabel emptylabel2 = new JLabel(" ");
+        emptylabel2.setMaximumSize(new Dimension(100,25));
+        filterPanel.add(emptylabel1);
+        filterPanel.add(emptylabel2);
+        filterPanel.add(typeComboBox);
+        filterPanel.add(tagsComboBox);
+        filterPanel.add(filterTextField);
+        filterPanel.add(filterButton);
+        filterPanel.setBorder(BorderFactory.createTitledBorder("Filter questions"));          
+       
+        panel.add(buttonsPanel);    
+        panel.add(filterPanel);
+        panel.add(listPanel);
+     
+        panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
+        
+        return panel;
+    }
+    
+    /** 
+     * Add buttons' listeners     
+     */
+    private void addListeners() {
+        addButton.addActionListener(new ActionListener(){
+            public void actionPerformed(ActionEvent e) 
+            {
+                createQuestion();
+            }
+        });
+        
+        editButton.addActionListener(new ActionListener(){
+            public void actionPerformed(ActionEvent e) 
+            {
+                editQuestion();
+            }
+        });
+        reviewButton.addActionListener(new ActionListener(){
+            public void actionPerformed(ActionEvent e) 
+            {
+                reviewQuestion();
+            }
+        });
+        deleteButton.addActionListener(new ActionListener(){
+            public void actionPerformed(ActionEvent e) 
+            {
+                deleteQuestion();
+            }
+        });
+        
+        filterButton.addActionListener(new ActionListener(){
+            public void actionPerformed(ActionEvent e) 
+            {
+                filterQuestions();
+                tagsComboBox.setEditable(false);
+            }
+        });
+        typeComboBox.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent e) {
+                String type = (String)typeComboBox.getSelectedItem();
+                if(type.equals("Tags")) {
+                    tagsComboBox.setEnabled(true);
+                }
+                else {
+                    tagsComboBox.setEnabled(false);
+                }
+            }
+        });
+        tagsComboBox.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent e) {
+                String s = (String)tagsComboBox.getSelectedItem();
+                if(s.equals("Other tag...")) {
+                    tagsComboBox.setEditable(true);
+                    tagsComboBox.setSelectedItem("");
+                }                
+            }
+        });
+        questionsList.addListSelectionListener(new ListSelectionListener(){
+            public void valueChanged(ListSelectionEvent e) {
+                int index = questionsList.getSelectedIndex();
+                if(index == listIndex) {
+                    return;
+                }
+                listIndex = index;
+            }
+        });
+    }
+    
+    /**
+     * Creates a QuestionTab object for adding a new question
      */
     private void createQuestion() {
         
@@ -350,16 +482,15 @@ public class QuestionSetTab {
                 return;
             }
             Question question = new Question();
+            @SuppressWarnings("unused")
             QuestionTab qt = new QuestionTab("NewQ", this, tabbedPane,
-                                                    question, questionSet, qsName);
-            qt.initComponents();
+                                                  question, questionSet, qsName);
         
          }catch (Exception e){}
     }
+    
     /**
-     * Creates a QuestionTabEdit object for editing a selected question
-     * @param none
-     * @retun none
+     * Creates a QuestionTab object for editing a selected question
      */
     private void editQuestion() {
         try{   
@@ -380,16 +511,17 @@ public class QuestionSetTab {
                return;
             }
             
+            @SuppressWarnings("unused")
             QuestionTab qt = new QuestionTab("EditQ", this, tabbedPane, 
                                                     question, questionSet, qsName);
-            qt.initComponents();
-           
             
-        }catch (Exception e) {}
-        
+        }catch (Exception e) {
+            e.printStackTrace();
+        }        
     }
+    
     /**
-     * 
+     * Creates a "ReviewQuestionTab" object for reviewing the question
      */
     
     private void reviewQuestion() {
@@ -416,8 +548,6 @@ public class QuestionSetTab {
     }
     /**
      * Removes the question selected from question set
-     * @param none
-     * @retun none
      */
     private void deleteQuestion() {
         int index = questionsList.getSelectedIndex();
@@ -441,13 +571,62 @@ public class QuestionSetTab {
         updateQuestionsList("DEL", question);
     }
     /**
-     *  Enable and configure Drag And Drop in/from the questions list
+     * Makes a new listModel in which it adds the filtering results
      */
-    private void configureDnD() {
-        questionsList.setDragEnabled(true);
-        questionsList.setDropMode(DropMode.INSERT);
-        questionsList.setTransferHandler(new ListTransferHandler(this));
-    } 
+    private void filterQuestions() {
+        String type = (String)typeComboBox.getSelectedItem();
+        System.out.println("type = " + type);
+        String text = filterTextField.getText();
+        
+        if(text.length() == 0) {
+           questionsList.setModel(listModel);
+        }  
+        if(type.equals("Tags")) {
+            String tag = (String)tagsComboBox.getSelectedItem();
+            if(tag.length() == 0) return;
+            System.out.println("tag = " + tag);
+            filterTags(tag, text);
+        }
+        
+        if(type.equals("Text")) {
+            filterText(text);
+        }
+        
+        
+    }
+    
+    private void filterText(String text) {
+        if(!filteredListModel.isEmpty())
+            filteredListModel.removeAllElements();
+        for (Question question : questions) {   
+            String questionText = question.getText();
+            if(questionText.indexOf(text) != -1) {
+                filteredListModel.addElement(createQuestionPanel(question));
+            }            
+        }
+        questionsList.setModel(filteredListModel);        
+    }
+    
+    private void filterTags(String tagName, String text) {
+     
+        Vector <Question> values = questionsTags.get(tagName+"+"+text);
+        if(values == null) return;
+        if(!filteredListModel.isEmpty()) {
+            System.out.println("am sters toate elementele!");
+            filteredListModel.removeAllElements();
+        }
+        Vector <Question> copy = new Vector<Question>(values);
+        for(Question question : copy){ 
+           filteredListModel.addElement(createQuestionPanel(question));
+        }
+        
+        // nothing changes if there are 0 matches after fitering
+        if(!filteredListModel.isEmpty())
+            questionsList.setModel(filteredListModel);
+        else 
+            questionsList.setModel(listModel);
+    }
+    
 
 }
 
@@ -460,10 +639,10 @@ class ListTransferHandler extends TransferHandler{
     private static final long serialVersionUID = 2L;
    
      ListTransferHandler(QuestionSetTab qsTab) {
-        //super();
-        this.qsTab = qsTab;
-       
+         //super();
+        this.qsTab = qsTab;       
     }
+     
     public boolean canImport(TransferHandler.TransferSupport support) {
     
         System.out.println("aici in canImport");
@@ -473,6 +652,7 @@ class ListTransferHandler extends TransferHandler{
        
         return true;
     }
+    
     public boolean importData(TransferHandler.TransferSupport info) {
         System.out.println("aici in importData");
         if (!info.isDrop()) {
@@ -501,10 +681,12 @@ class ListTransferHandler extends TransferHandler{
             
         return true;
     }
+    
     public int getSourceActions(JComponent comp) {
         System.out.println("aici in getSourceActions");
         return COPY_OR_MOVE;
     }
+    
     public Transferable createTransferable(JComponent comp) {
         JList list = (JList)comp;
         index = list.getSelectedIndex();
@@ -519,6 +701,7 @@ class ListTransferHandler extends TransferHandler{
    
         return new StringSelection(data);
     }
+    
     public void exportDone(JComponent comp, Transferable trans, int action) {
         System.out.println("aici in exportDone");
         if (action != MOVE) {
@@ -546,11 +729,8 @@ class MyCellRenderer extends JPanel implements ListCellRenderer {
                                                   Object value,
                                                   int index,
                                                   boolean isSelected,
-                                                  boolean cellHasFocus) {
-        
-       
-      
-       // add((JPanel)panel);
+                                                  boolean cellHasFocus) {        
+   
         JPanel panel = (JPanel)value;
         panel.setBorder(BorderFactory.createTitledBorder(""));
         Component component = (Component)panel; 

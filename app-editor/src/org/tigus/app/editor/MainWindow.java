@@ -42,20 +42,16 @@ public class MainWindow implements ActionListener {
     
     /**
      * Class Constructor
-     * @param none
-     * @see JFrame
-     * 
-     *  
      */
     
     public MainWindow() {
        
         frame = new JFrame("Question Editor");
-       // SwingUtilities.updateComponentTreeUI(this);
+        // SwingUtilities.updateComponentTreeUI(this);
         frame.setLocation(50,50);
         frame.setPreferredSize(new Dimension(700,550));
      
-        /* add components : menu, toolbar, tooltips, panel */
+        /* add components : menu, toolbar, tooltips, panel  */
         initComponents();
         
         
@@ -71,7 +67,7 @@ public class MainWindow implements ActionListener {
         //frame.setDefaultLookAndFeelDecorated (true);
         frame.pack();
         
-        // Add a window listener for close button
+        /* Add a window listener for close button */
         frame.setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE);
         frame.addWindowListener(new WindowAdapter() {
             public void windowClosing(WindowEvent e) {
@@ -83,9 +79,7 @@ public class MainWindow implements ActionListener {
     
     
     /**
-     * Initializes the frame's components: menus, toolbars and the tabbedpane as main panel
-     * @param none
-     * @return none
+     * Initializes the frame's components: menus, toolbars and the tabbedpane as main panel  
      */
     
     private void initComponents() {
@@ -99,23 +93,23 @@ public class MainWindow implements ActionListener {
                                 "images/create.png", "images/delete.png", "images/edit.png",
                                 "images/switch.png"};                               
         
-        // create menus
+        /* create menus */
         
         menuItems = new JMenuItem[12];
         // menuItems 0->6  for fileMenu, menuItems 7->10 for questionMenu
         
         for (i = 0; i < 11; i++) {
-            // initialize the JMenuItems components with text and icons
+            /* initialize the JMenuItems components with text and icons */
             menuItems[i] = new JMenuItem(menuItemsNames[i], new ImageIcon(iconNames[i]));   
             
-            // add listeners to the JMenuItems components
+            /* add listeners to the JMenuItems components */
             menuItems[i].addActionListener(this);
         }
-        // disable "Save"/ "Save as" until a question set is loaded or created.
+        /* disable "Save"/ "Save as" until a question set is loaded or created. */
         menuItems[2].setEnabled(false);
         menuItems[3].setEnabled(false);
         
-        // add tooltips to the JMenuItems components
+        /* add tooltips to the JMenuItems components */
         menuItems[0].setToolTipText("Create a new question set");
         menuItems[1].setToolTipText("Select a question set and load its content");
         menuItems[2].setToolTipText("Save the changes made to a question set");        
@@ -126,7 +120,7 @@ public class MainWindow implements ActionListener {
         
         menuItems[10].setToolTipText("Move questions between question sets");
         
-        // set menu items' accelerators and mnemonics
+        /*set menu items' accelerators and mnemonics */
         
         menuItems[0].setAccelerator(KeyStroke.getKeyStroke(
         KeyEvent.VK_N, ActionEvent.CTRL_MASK));
@@ -172,7 +166,7 @@ public class MainWindow implements ActionListener {
         
         frame.setJMenuBar(menuBar);   
         
-        // create toolbar
+        /* create toolbar */
         
         toolBar = new JToolBar();
         toolBarButtons = new JButton[7];
@@ -195,20 +189,16 @@ public class MainWindow implements ActionListener {
         
         frame.add(toolBar, BorderLayout.PAGE_START);
         
-        // add main component: JTabbedPane
+        /* add main component: JTabbedPane */
         tabbedPane = new JTabbedPane();        
         
-        tabbedPane.setPreferredSize(new Dimension(600,500));
-        
+        tabbedPane.setPreferredSize(new Dimension(600,500));        
 
         frame.add(tabbedPane);
-        
-        
-        
     }
+    
     /**
      * Reads the author's name from the application's "editor.conf" file
-     * @param none
      * @return if the author's name is unknows returns a string equal to "null" else returns a String with author's name.
      */
     public String getAuthor() {
@@ -247,10 +237,10 @@ public class MainWindow implements ActionListener {
     public void questionSetChanged() {
         unsaved = true;
     }
+    
     /**
      * Implementation of actionPerformed method inherited from ActionListener interface
-     * @param ActionEvent 
-     * @return none
+     * @param e  
      */
     
     public void actionPerformed(ActionEvent e) {
@@ -360,8 +350,6 @@ public class MainWindow implements ActionListener {
     /**
      * Method used in case of closing the window or selecting Quit from File menu.
      * It prompts a confirm dialog
-     * @param none
-     * @return none
      */
     private void showQuitDialog()
     {
@@ -379,16 +367,22 @@ public class MainWindow implements ActionListener {
         }
         
     }
+    
+    /**
+     * Creates a tab for the question set loaded or created
+     * @param qs    question set
+     * @param name  question set's name
+     * @param path  the file path qhere the question set is saved
+     */
     private void showQuestionSet(QuestionSet qs, String name, String path)
     {
         if(name.length() > 0)
             frame.setTitle(name + " - Question Editor");
         this.qs = qs;
-        qsPath = path;
+        qsPath = path;        
         
         qsTab = new QuestionSetTab(this, qs, name);
-        qsTab.initComponents();
-        
+                
         menuItems[7].setEnabled(true);
         menuItems[8].setEnabled(true);
         menuItems[9].setEnabled(true);
@@ -396,7 +390,8 @@ public class MainWindow implements ActionListener {
         empty = false;
         untitled = false;
         
-        // enable "Save" / "Save As" menu items
+        
+        /* enable "Save" / "Save As" menu items */
         menuItems[2].setEnabled(true);
         menuItems[3].setEnabled(true);
     }  

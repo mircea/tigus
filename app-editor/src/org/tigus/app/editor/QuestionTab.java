@@ -71,12 +71,12 @@ public class QuestionTab {
  
     /**
      * Class's constructor
-     * @param op - indicates why this tab is created for editing a question: "EditQ", or for creating one: "NewQ"
-     * @param qsTab - the question's QuestionSet
-     * @param pane - the JTabbedPane object in which to add the new tab
-     * @param question - the question to be edited
-     * @param qs - the QuestionSet object containing the question to be edited
-     * @param qsName - the name of the question set
+     * @param op indicates why this tab is created for editing a question: "EditQ", or for creating one: "NewQ"
+     * @param qsTab the question's QuestionSet
+     * @param pane the JTabbedPane object in which to add the new tab
+     * @param question the question to be edited
+     * @param qs the QuestionSet object containing the question to be edited
+     * @param qsName the name of the question set
      */ 
  
     
@@ -92,7 +92,7 @@ public class QuestionTab {
         isCorrect = false; 
         state = "ADD"; 
         correctCount = 0;
-        //initComponents();
+        initComponents();
     }
     
     /**
@@ -106,9 +106,8 @@ public class QuestionTab {
             listIndex = -1;
             return;
         }
-        
-        
-        // build a list model containing the question's answer 
+                
+        /* build a list model containing the question's answer  */ 
         String s;
         for(int i = 0; i < answers.size(); i++){
             if (answers.elementAt(i).isCorrect() == true){
@@ -118,7 +117,7 @@ public class QuestionTab {
             else s = "<html><ul><li type=disc> ";
             listModel.addElement(s + answers.elementAt(i).getText()+"</ul></html>");
         }
-        // add the list model to the list component
+        /* add the list model to the list component */
         answersList = new JList(listModel);
         listIndex = -1;
     }
@@ -126,9 +125,9 @@ public class QuestionTab {
     /**
      * Adds, modifies or deletes an element from the question's list of answers and updates
      * the tab's JList component with these changes. 
-     * @param c - true if the answer is marked as correct
-     * @param text - a string with the answer's text
-     * @param index - the index of the answer in the answer's list, 
+     * @param c true if the answer is marked as correct
+     * @param text a string with the answer's text
+     * @param index the index of the answer in the answer's list, 
      *                  it matters only when editing or deleting an answer
      */
     private void updateAnswersList(Boolean c, String text, int index) {
@@ -181,7 +180,7 @@ public class QuestionTab {
      */
     private void showTags() {
       
-        // get tags
+        /* get tags */
         tagSet = question.getTags(); 
         if (tagSet.isEmpty()) {
             tagsComboBox.setModel(comboBoxModel);
@@ -189,7 +188,7 @@ public class QuestionTab {
         }
         Set <String> keys = tagSet.keySet();
         
-        // insert tags' names into comboBox
+        /* insert tags' names into comboBox */
        
         for (Iterator <String> it = keys.iterator(); it.hasNext(); ) {           
            String tagName = new String(it.next());
@@ -210,7 +209,7 @@ public class QuestionTab {
      */
     private void showTagValues(String tagName) {        
         System.out.println("la showTagValues() tagName = " + tagName);        
-        // get tag's values
+        /* get tag's values */
         Vector <String> values = new Vector<String>(tagSet.get(tagName));
         String text = new String();
         text += values.elementAt(0);
@@ -226,8 +225,6 @@ public class QuestionTab {
     /**
      * Initializes the main panel's components and containers 
      * by setting their size, their layout and their listeners.
-     * @params none
-     * @return none
      */
     
     public void initComponents() {
@@ -273,7 +270,6 @@ public class QuestionTab {
     
     /**
      * Places the class's GUI components into panels
-     * @params none
      * @return JPanel object
      */
     private JPanel setLayout() {
@@ -348,7 +344,6 @@ public class QuestionTab {
     
     /**
      * Add listeners to the class's GUI components (buttons, checkbox, list, combobox)
-     * @params none
      */
     private void addListeners() {
         
