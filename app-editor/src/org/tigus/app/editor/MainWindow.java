@@ -2,6 +2,7 @@ package org.tigus.app.editor;
 
 import org.tigus.core.*;
 import java.io.*;
+import java.util.Vector;
 
 import javax.swing.*;
 
@@ -38,7 +39,12 @@ public class MainWindow implements ActionListener {
     String qsPath;  // the last used path for loading/saving question sets
     QuestionSet qs; // the question set loaded/created in this window
     QuestionSetTab qsTab; //the tab showing the question set 
-   
+    PreferencesWindow preferencesWindow;
+    
+    /*file names     */
+    final String configFile = "configFile";
+    final String wordsFile = "filterwords.txt";
+     
     
     /**
      * Class Constructor
@@ -198,16 +204,16 @@ public class MainWindow implements ActionListener {
     }
     
     /**
-     * Reads the author's name from the application's "editor.conf" file
+     * Reads the author's name from the application's "configFile" file
      * @return if the author's name is unknows returns a string equal to "null" else returns a String with author's name.
      */
     public String getAuthor() {
         try {
-            RandomAccessFile configFile = new RandomAccessFile("editor.conf", "rw");   
+            RandomAccessFile raf = new RandomAccessFile(configFile, "rw");   
           
-            byte[] bytes= new byte[(int)(configFile.length())];
-            configFile.readFully(bytes);
-            configFile.close(); 
+            byte[] bytes= new byte[(int)(raf.length())];
+            raf.readFully(bytes);
+            raf.close(); 
             
             String s = new String(bytes);
 
@@ -337,10 +343,9 @@ public class MainWindow implements ActionListener {
             return;
         }
         
-        if (command.equals("Preferences")) {
-                
-            @SuppressWarnings("unused")
-            PreferencesWindow preferencesWindow = new PreferencesWindow();
+        if (command.equals("Preferences")) {                
+            
+             preferencesWindow = new PreferencesWindow(qsTab);
           
         }
         
@@ -362,7 +367,12 @@ public class MainWindow implements ActionListener {
                     msg, "exit", JOptionPane.YES_NO_OPTION);
        
         if (value == JOptionPane.YES_OPTION) {
-            frame.setVisible( false );
+            saveFilterWords();
+            if(preferencesWindow != null) {
+                preferencesWindow.setVisible(false);
+                preferencesWindow.dispose();
+            }
+            frame.setVisible(false);
             frame.dispose();
         }
         
@@ -382,7 +392,11 @@ public class MainWindow implements ActionListener {
         qsPath = path;        
         
         qsTab = new QuestionSetTab(this, qs, name);
-                
+        /* There is an option that is enabled only when a questionSet is open, 
+           therefore, the PreferencesWindow object needs to be notified */
+        if(preferencesWindow != null) 
+            preferencesWindow.setQuestionTab(qsTab);
+        
         menuItems[7].setEnabled(true);
         menuItems[8].setEnabled(true);
         menuItems[9].setEnabled(true);
@@ -396,6 +410,23 @@ public class MainWindow implements ActionListener {
         menuItems[3].setEnabled(true);
     }  
     
+    private void saveFilterWords() {
+       if(empty)
+           return;
+       Vector <String> words= qsTab.getFileringWords();
+       try {
+           RandomAccessFile raf = new RandomAccessFile(wordsFile, "rw");
+          // raf.seek(raf.length());
+           for (String word : words) {
+               raf.writeBytes(word+"\n");
+           }
+           raf.close();
+       }catch(Exception ex) {
+           ex.printStackTrace();   
+       }
+           
+       
+    }
   
 }
 

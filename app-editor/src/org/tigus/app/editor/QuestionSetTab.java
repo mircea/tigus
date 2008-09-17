@@ -9,6 +9,7 @@ import javax.swing.*;
 import javax.swing.event.*;
 
 import java.util.*;
+import java.io.*;
 
 import org.tigus.core.*;
 
@@ -17,7 +18,7 @@ import org.tigus.core.*;
  * @author Adriana Draghici
  *
  */
-public class QuestionSetTab {    
+public class QuestionSetTab implements ActionListener{    
     
     MainWindow mainWindow;
     JTabbedPane tabbedPane;
@@ -54,6 +55,13 @@ public class QuestionSetTab {
     DefaultComboBoxModel typeCBModel = new DefaultComboBoxModel();
     DefaultComboBoxModel tagsCBModel = new DefaultComboBoxModel();
     
+    final String []filterCriterias = {"Text", "Tag", "Tag and Value"};
+    
+    Vector<String> words = new Vector<String>(); // keeps words used for filtering
+    Vector<JMenuItem> menuItems = new Vector<JMenuItem>();
+    
+    JPopupMenu popupMenu = new JPopupMenu();
+    Boolean hasPopup = false;
     /**
      * Constructor
      * @param mainWindow - the MainWindow in which to add this tab
@@ -71,7 +79,7 @@ public class QuestionSetTab {
         initComponents();
         
     }    
-   
+    
     /**
      * Updates the objects that keep the questions, including the JList objects that displays them
      * @param op - the change made to the question set. Values : "ADD" , "EDIT", "DEL"
@@ -118,7 +126,7 @@ public class QuestionSetTab {
                 filterPanel.setVisible(false);
             }
             
-            // tells the main window that unsaved changes were made
+            // notifies the main window that unsaved changes were made
             mainWindow.questionSetChanged();
         }
         
@@ -207,7 +215,19 @@ public class QuestionSetTab {
         for (Iterator <String> it = keys.iterator(); it.hasNext(); ) {           
            String tagName = new String(it.next());
            
-           
+           /* add to a HashMap object the "tag_name" as a key 
+           and append the question it's value */
+           Vector <Question> v = questionsTags.get(tagName);
+           if(v == null) {
+               v = new Vector<Question>();
+           }
+           // avoid duplicates
+           if(!v.contains(question)) {
+               v.addElement(question);
+               System.out.println("aici la adaugarea in hashMap");
+               questionsTags.put(tagName, v);
+           }
+            
            /* builds the string as tagName: values */
            text += "<DD>";
            text += tagName;
@@ -224,14 +244,14 @@ public class QuestionSetTab {
                
                /* add to a HashMap object the "tag_name+value" as a key 
                   and append the question it's value */
-               Vector <Question> v = questionsTags.get(tagName+"+"+val);
-               if(v == null) {
-                   v = new Vector<Question>();
+               Vector <Question>vs = questionsTags.get(tagName+"+"+val);
+               if(vs == null) {
+                   vs = new Vector<Question>();
                }
                // avoid duplicates
-               if(!v.contains(question)) {
-                   v.addElement(question);               
-                   questionsTags.put(tagName+"+"+val, v);
+               if(!vs.contains(question)) {
+                   vs.addElement(question);               
+                   questionsTags.put(tagName+"+"+val, vs);
                }
            }
            text += "<br>";          
@@ -241,6 +261,31 @@ public class QuestionSetTab {
         return text;    
     }
     
+    public void enablePopupMenu(Boolean b) {      
+        if(!hasPopup && b) {
+            System.out.println("enable");
+            initPopupMenu();
+            filterTextField.add(popupMenu);
+            filterTextField.addMouseListener(new MouseAdapter() {          
+                public void mouseClicked(MouseEvent evt) {               
+                        popupMenu.show(evt.getComponent(), 0, evt.getComponent().getHeight());             
+                }          
+            });
+            hasPopup = b;
+            return;
+        }
+        
+        popupMenu = new JPopupMenu();
+        popupMenu.setEnabled(false);
+        words = new Vector<String>();
+        hasPopup = b; 
+    }
+    
+    public void clearPopupMenu() {
+        popupMenu = new JPopupMenu();
+        words = new Vector<String>();
+    }
+    
     public Question getQuestion(int index) {
         return questions.elementAt(index);
     }
@@ -248,7 +293,9 @@ public class QuestionSetTab {
     public QuestionSet getQuestionSet() {
         return questionSet;
     }
-    
+    public Vector<String> getFileringWords() {
+        return words;
+    }
     /**
      * Returns the author's name, as it is saved in the application's configuration file
      * @return String object representing the author's name
@@ -301,6 +348,10 @@ public class QuestionSetTab {
    
         initComboBoxes();       
         
+        /* configure popup menu*/
+        enablePopupMenu(hasPopup);      
+        
+        
         /* set components' size*/
         setSize();
         
@@ -326,9 +377,10 @@ public class QuestionSetTab {
     
     private void initComboBoxes() {
         
-        typeCBModel.addElement("Text");
-        typeCBModel.addElement("Tags");
-        typeCBModel.addElement("answers");        
+        for (int i = 0; i < filterCriterias.length ; i++) {
+            typeCBModel.addElement(filterCriterias[i]);
+        }
+            
         typeComboBox.setModel(typeCBModel);
         typeComboBox.setEditable(false);
         typeComboBox.setSelectedItem(0);
@@ -340,6 +392,32 @@ public class QuestionSetTab {
         tagsComboBox.setModel(tagsCBModel);
        // tagsComboBox.setEditable(true);    
         tagsComboBox.setEnabled(false);
+    }
+    
+    private void initPopupMenu() {
+        try {
+            RandomAccessFile raf = new RandomAccessFile("filterwords.txt", "rw");
+            
+            String line = "";     
+            
+            while((line = raf.readLine() )!= null) {          
+                words.add(line.trim());               
+            }
+            
+            Collections.sort(words, String.CASE_INSENSITIVE_ORDER);  
+           
+            for (String word : words) {
+                JMenuItem item = new JMenuItem(word);
+                item.addActionListener(this);
+                menuItems.add(item);
+                popupMenu.add(item);                
+            }
+            
+            raf.close();
+            
+        }catch(Exception ex) {
+            ex.printStackTrace();
+        }
     }
     
     private void setSize() {
@@ -376,19 +454,18 @@ public class QuestionSetTab {
                                                         // 2 - size of horizontal gap, 
                                                         // 0 - size of vertical gap
         filterPanel.add(label1);
-        filterPanel.add(label2);
-        JLabel emptylabel1 = new JLabel(" ");
-        emptylabel1.setMaximumSize(new Dimension(100,25));
-        JLabel emptylabel2 = new JLabel(" ");
-        emptylabel2.setMaximumSize(new Dimension(100,25));
-        filterPanel.add(emptylabel1);
-        filterPanel.add(emptylabel2);
+        filterPanel.add(label2);      
+        filterPanel.add(new JLabel(" "));
+        filterPanel.add(new JLabel(" "));
         filterPanel.add(typeComboBox);
         filterPanel.add(tagsComboBox);
         filterPanel.add(filterTextField);
         filterPanel.add(filterButton);
         filterPanel.setBorder(BorderFactory.createTitledBorder("Filter questions"));          
-       
+      
+        filterPanel.setPreferredSize(new Dimension(610, 75));
+        filterPanel.setMaximumSize(new Dimension(610, 75));
+        
         panel.add(buttonsPanel);    
         panel.add(filterPanel);
         panel.add(listPanel);
@@ -435,17 +512,30 @@ public class QuestionSetTab {
                 tagsComboBox.setEditable(false);
             }
         });
+        
         typeComboBox.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent e) {
+                /* When filter after Text option is selected, there is no need for
+                 * tagsComboBox, therefore this component is disabled
+                 * When filter after Tag option is enabled there is no need for
+                 * the textField object, therefore this component is disabled
+                 */
                 String type = (String)typeComboBox.getSelectedItem();
-                if(type.equals("Tags")) {
-                    tagsComboBox.setEnabled(true);
+                if(type.equals(filterCriterias[0])) { 
+                    tagsComboBox.setEnabled(false);
+                    filterTextField.setEnabled(true);
                 }
                 else {
-                    tagsComboBox.setEnabled(false);
+                    if(type.equals(filterCriterias[1])) {
+                        filterTextField.setText("");
+                        filterTextField.setEnabled(false);
+                    }                    
+                    tagsComboBox.setEnabled(true);
+                    filterTextField.setEnabled(true);
                 }
             }
         });
+        
         tagsComboBox.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent e) {
                 String s = (String)tagsComboBox.getSelectedItem();
@@ -464,6 +554,14 @@ public class QuestionSetTab {
                 listIndex = index;
             }
         });
+    }
+    
+    public void actionPerformed(ActionEvent e) {
+        String command  = e.getActionCommand();
+        System.out.println(command);
+        if(words.contains(command)) {
+            filterTextField.setText(command);
+        }
     }
     
     /**
@@ -581,17 +679,39 @@ public class QuestionSetTab {
         if(text.length() == 0) {
            questionsList.setModel(listModel);
         }  
-        if(type.equals("Tags")) {
+        if(type.equals(filterCriterias[2])) { // Tag and Values 
             String tag = (String)tagsComboBox.getSelectedItem();
             if(tag.length() == 0) return;
             System.out.println("tag = " + tag);
             filterTags(tag, text);
+            
         }
-        
-        if(type.equals("Text")) {
+        if(type.equals(filterCriterias[1])) { // Tag
+            String tag = (String)tagsComboBox.getSelectedItem();         
+            filterTags(tag, "");
+            filterTextField.setEnabled(true);
+            
+        }
+        if(type.equals(filterCriterias[0])) { // Text
             filterText(text);
         }
         
+        // update words' vector
+        if ((text.length() != 0) && (!words.contains(text))) {
+            words.add(text);
+            
+            // refresh the popup menu, sort the words
+            popupMenu.removeAll();
+            menuItems.removeAllElements();
+            Collections.sort(words, String.CASE_INSENSITIVE_ORDER);
+            
+            for (String word : words) {
+                JMenuItem item = new JMenuItem(word);
+                item.addActionListener(this);
+                menuItems.add(item);
+                popupMenu.add(item);
+            }
+        }
         
     }
     
@@ -608,11 +728,19 @@ public class QuestionSetTab {
     }
     
     private void filterTags(String tagName, String text) {
-     
-        Vector <Question> values = questionsTags.get(tagName+"+"+text);
-        if(values == null) return;
-        if(!filteredListModel.isEmpty()) {
-            System.out.println("am sters toate elementele!");
+        Vector <Question> values;
+        if(text.length() == 0) {
+            values = questionsTags.get(tagName);
+        }
+        else {
+            values = questionsTags.get(tagName+"+"+text);
+        }
+        if(values == null) {
+            // when there are no results after filering, it is shown an empty list
+            questionsList.setModel(new DefaultListModel());
+            return;
+        }
+        if(!filteredListModel.isEmpty()) {           
             filteredListModel.removeAllElements();
         }
         Vector <Question> copy = new Vector<Question>(values);
@@ -620,16 +748,11 @@ public class QuestionSetTab {
            filteredListModel.addElement(createQuestionPanel(question));
         }
         
-        // nothing changes if there are 0 matches after fitering
-        if(!filteredListModel.isEmpty())
-            questionsList.setModel(filteredListModel);
-        else 
-            questionsList.setModel(listModel);
+        questionsList.setModel(filteredListModel);       
     }
     
 
 }
-
 
 
 class ListTransferHandler extends TransferHandler{
