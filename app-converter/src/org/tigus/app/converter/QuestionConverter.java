@@ -13,11 +13,9 @@ public class QuestionConverter {
     public static void main(String[] args) {
         // TODO Auto-generated method stub
 
-        String path;
-        path = new String("/home/chupy/dev/tigus.git/challenge_week_10_1.txt");
-
         PlainTextQuestionConverter plain;
-        plain = new PlainTextQuestionConverter(path);
+
+        plain = new PlainTextQuestionConverter(args[0]);
 
         plain.parseFile();
 
