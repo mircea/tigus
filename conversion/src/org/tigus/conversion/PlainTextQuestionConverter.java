@@ -63,19 +63,18 @@ public class PlainTextQuestionConverter {
                 }
 
                 /*
-                 * if we are in tag state or in no qustion state and the line
+                 * if we are in tag state or in no question state and the line
                  * starts with '@' we have tags to parse
                  */
                 if (((state == TAGSTATE) || (state == NOQUESTIONSTATE))
                         && line.startsWith("@")) {
-                    state = TAGSTATE;
                     parseTags(line);
                 }
 
                 /*
                  * if we are in tag state or in question text state and the line
-                 * doesn't start with '@' nor '+' or'-' we have question text to
-                 * parse
+                 * doesn't start with '@' nor '+' nor'-' we have question text
+                 * to parse
                  */
 
                 if (((state == TAGSTATE) || (state == QUESTIONTEXTSTATE))
@@ -109,6 +108,19 @@ public class PlainTextQuestionConverter {
                     q = new Question();
                 }
 
+                if ((state == ANSWERSTATE) && (line.trim().length() != 0)
+                        && !(line.startsWith("+") || line.startsWith("-"))) {
+                    System.out.println("EXCEPTION: thereis a line not "
+                            + "starting with + or - in the answers");
+                    return;
+                }
+
+                if ((state == NOQUESTIONSTATE) && (line.trim().length() != 0)
+                        && !(line.startsWith("@"))) {
+                    System.out.println("EXCEPTION: the new question does "
+                            + "not begin with @ marker");
+                    return;
+                }
             }
 
         } catch (FileNotFoundException e) {
