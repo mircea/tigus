@@ -44,4 +44,11 @@ public class Change {
         this.before = new Question(change.before);
         this.after = new Question(change.after);
     }
+    
+    public Question getPreviousQuestion() {
+        return this.before;
+    }
+    public Question getQuestion() {
+        return this.after;
+    }
 }

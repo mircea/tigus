@@ -27,5 +27,21 @@ public class Review {
         this.comment = new String(r.comment);
         this.change = new Change(r.change);
     }
+    
+    public String getAuthor() {
+        return this.author;
+    }
+    
+    public Date getDate() {
+        return this.date;
+    }
+    
+    public String getComment() {
+        return this.comment;
+    }
+    
+    public Change getChange() {
+        return this.change;
+    }
 
 }
