@@ -23,26 +23,34 @@ public class QuestionSetTab implements ActionListener{
     MainWindow mainWindow;
     JTabbedPane tabbedPane;
     QuestionSet questionSet;
-    String qsName;
-    int listIndex;
+    String qsName;    
+    
+    int listIndex;    
+    Boolean hasPopup = false; // true if popupMenu is enabled
     
     Vector <Question> questions = new Vector<Question>();
-    Vector <JPanel> questionPanels = new Vector<JPanel>();
-    Vector <TagSet> tags = new Vector<TagSet>();
+    Vector <JPanel> questionPanels = new Vector<JPanel>();   
+    Vector<String> words = new Vector<String>(); // keeps words used for filtering
+    Vector<JMenuItem> menuItems = new Vector<JMenuItem>(); // menuItems for popupMenu
+    
     HashMap <String,Vector<Question>> questionsTags = new HashMap <String, Vector<Question>>();
     
     DropTarget dt;
     DragSource ds;
     
+    /* GUI components   */
+    
+    JPopupMenu popupMenu = new JPopupMenu();
     JList questionsList = new JList();    
     JButton addButton = new JButton("Add question");
     JButton editButton = new JButton("Edit Question");
     JButton reviewButton = new JButton("Review Question");
     JButton deleteButton = new JButton("Delete question");
+    JButton viewReviewsButton = new JButton("Question's reviews");
+    
     
     JLabel label1 = new JLabel("Filer criteria:");
     JLabel label2 = new JLabel("Tags:");
- 
     JComboBox typeComboBox = new JComboBox();
     JComboBox tagsComboBox = new JComboBox();
     JTextField filterTextField = new JTextField();
@@ -54,14 +62,8 @@ public class QuestionSetTab implements ActionListener{
     DefaultListModel filteredListModel = new DefaultListModel();
     DefaultComboBoxModel typeCBModel = new DefaultComboBoxModel();
     DefaultComboBoxModel tagsCBModel = new DefaultComboBoxModel();
-    
     final String []filterCriterias = {"Text", "Tag", "Tag and Value"};
-    
-    Vector<String> words = new Vector<String>(); // keeps words used for filtering
-    Vector<JMenuItem> menuItems = new Vector<JMenuItem>();
-    
-    JPopupMenu popupMenu = new JPopupMenu();
-    Boolean hasPopup = false;
+   
     /**
      * Constructor
      * @param mainWindow - the MainWindow in which to add this tab
@@ -132,12 +134,82 @@ public class QuestionSetTab implements ActionListener{
         
         
     }
+    
+    public void enablePopupMenu(Boolean b) {      
+        if(!hasPopup && b) {
+            System.out.println("enable");
+            initPopupMenu();
+            filterTextField.add(popupMenu);
+            filterTextField.addMouseListener(new MouseAdapter() {          
+                public void mouseClicked(MouseEvent evt) {               
+                        popupMenu.show(evt.getComponent(), 0, evt.getComponent().getHeight());             
+                }          
+            });
+            hasPopup = b;
+            return;
+        }
+        
+        popupMenu = new JPopupMenu();
+        popupMenu.setEnabled(false);
+        words = new Vector<String>();
+        hasPopup = b; 
+    }
+    
+    public void clearPopupMenu() {
+        popupMenu = new JPopupMenu();
+        words = new Vector<String>();
+    }
+    
+    public Question getQuestion(int index) {
+        return questions.elementAt(index);
+    }
+    
+    public QuestionSet getQuestionSet() {
+        return questionSet;
+    }
+    public String getQuestionSetName() {
+        return qsName;
+    }
+    
+    public Vector<String> getFilteringWords() {
+        return words;
+    }
+    /**
+     * Returns the author's name, as it is saved in the application's configuration file
+     * @return String object representing the author's name
+     */
+    public String getAuthor() {
+        String name = new String(mainWindow.getAuthor());
+        return name;
+    }
+    
+    /**
+     * Returns the author's name as it is saved in the question's "author" tag
+     * @param question The question selected from the question set
+     * @return String object representing the author's name
+     */
+    public String getAuthorTagValue(Question question) {
+        
+        TagSet tagSet = question.getTags();
+        Set <String> keys = tagSet.keySet();
+        
+        for (Iterator <String> it = keys.iterator(); it.hasNext(); ) {           
+           String tagName = new String(it.next());
+           if(tagName.toLowerCase().equals("author")) {
+               
+               Vector <String> values = new Vector<String>(tagSet.get(tagName));
+               
+               return values.elementAt(0);
+           }
+        }
+        return "";               
+    }
     /**
      * Creates a panel showing the question's text and it's answers.
      * @param question
      * @return JPanel object 
      */
-    public JPanel createQuestionPanel(Question question) {
+    private JPanel createQuestionPanel(Question question) {
         
         /* get answers  */
         Vector <Answer> answers = new Vector<Answer>(question.getAnswers());
@@ -156,11 +228,7 @@ public class QuestionSetTab implements ActionListener{
         
         System.out.println("answers:" + answersText);  
         
-        /* get tags */
-        
-        TagSet tagSet = question.getTags(); 
-        tags.addElement(tagSet);
-
+       
         /* create question's panel  */
         
         JPanel p = new JPanel();
@@ -175,7 +243,7 @@ public class QuestionSetTab implements ActionListener{
     /**
      * Initializes the objects containing the questions  
      */
-    public void createQuestionsList() {
+    private void createQuestionsList() {
         
         /* create panels for each question  */
         
@@ -261,76 +329,12 @@ public class QuestionSetTab implements ActionListener{
         return text;    
     }
     
-    public void enablePopupMenu(Boolean b) {      
-        if(!hasPopup && b) {
-            System.out.println("enable");
-            initPopupMenu();
-            filterTextField.add(popupMenu);
-            filterTextField.addMouseListener(new MouseAdapter() {          
-                public void mouseClicked(MouseEvent evt) {               
-                        popupMenu.show(evt.getComponent(), 0, evt.getComponent().getHeight());             
-                }          
-            });
-            hasPopup = b;
-            return;
-        }
-        
-        popupMenu = new JPopupMenu();
-        popupMenu.setEnabled(false);
-        words = new Vector<String>();
-        hasPopup = b; 
-    }
+   
     
-    public void clearPopupMenu() {
-        popupMenu = new JPopupMenu();
-        words = new Vector<String>();
-    }
-    
-    public Question getQuestion(int index) {
-        return questions.elementAt(index);
-    }
-    
-    public QuestionSet getQuestionSet() {
-        return questionSet;
-    }
-    public Vector<String> getFileringWords() {
-        return words;
-    }
-    /**
-     * Returns the author's name, as it is saved in the application's configuration file
-     * @return String object representing the author's name
-     */
-    public String getAuthor() {
-        String name = new String(mainWindow.getAuthor());
-        return name;
-    }
-    
-    /**
-     * Returns the author's name as it is saved in the question's "author" tag
-     * @param question The question selected from the question set
-     * @return String object representing the author's name
-     */
-    public String getAuthorTagValue(Question question) {
-        
-        TagSet tagSet = question.getTags();
-        Set <String> keys = tagSet.keySet();
-        
-        for (Iterator <String> it = keys.iterator(); it.hasNext(); ) {           
-           String tagName = new String(it.next());
-           if(tagName.toLowerCase().equals("author")) {
-               
-               Vector <String> values = new Vector<String>(tagSet.get(tagName));
-               
-               return values.elementAt(0);
-           }
-        }
-        return "";
-               
-    }
      /**
      * Initializes GUI components of this tab
      */
-    public void initComponents() {   
+    private void initComponents() {   
         
         tabbedPane.repaint();
       
@@ -362,7 +366,7 @@ public class QuestionSetTab implements ActionListener{
         addListeners();
         
         /* add panel to tabbedpane*/
-        tabbedPane.addTab("QS",  mainPanel);
+        tabbedPane.addTab("   QS   ",  mainPanel);
         
     } 
     
@@ -447,7 +451,8 @@ public class QuestionSetTab implements ActionListener{
         buttonsPanel.add(addButton);             
         buttonsPanel.add(editButton); 
         buttonsPanel.add(reviewButton); 
-        buttonsPanel.add(deleteButton);        
+        buttonsPanel.add(deleteButton); 
+        buttonsPanel.add(viewReviewsButton); 
         buttonsPanel.setLayout(new BoxLayout(buttonsPanel, BoxLayout.X_AXIS));        
         
         filterPanel.setLayout(new GridLayout(2,4,2,0)); // 2 rows, 4 columns,
@@ -480,34 +485,33 @@ public class QuestionSetTab implements ActionListener{
      */
     private void addListeners() {
         addButton.addActionListener(new ActionListener(){
-            public void actionPerformed(ActionEvent e) 
-            {
+            public void actionPerformed(ActionEvent e)  {
                 createQuestion();
             }
         });
         
         editButton.addActionListener(new ActionListener(){
-            public void actionPerformed(ActionEvent e) 
-            {
+            public void actionPerformed(ActionEvent e) {
                 editQuestion();
             }
         });
         reviewButton.addActionListener(new ActionListener(){
-            public void actionPerformed(ActionEvent e) 
-            {
+            public void actionPerformed(ActionEvent e) {
                 reviewQuestion();
             }
         });
         deleteButton.addActionListener(new ActionListener(){
-            public void actionPerformed(ActionEvent e) 
-            {
+            public void actionPerformed(ActionEvent e) {
                 deleteQuestion();
             }
         });
-        
+        viewReviewsButton.addActionListener(new ActionListener(){
+            public void actionPerformed(ActionEvent e) {
+                viewReviews();
+            }
+        });
         filterButton.addActionListener(new ActionListener(){
-            public void actionPerformed(ActionEvent e) 
-            {
+            public void actionPerformed(ActionEvent e) {
                 filterQuestions();
                 tagsComboBox.setEditable(false);
             }
@@ -581,8 +585,7 @@ public class QuestionSetTab implements ActionListener{
             }
             Question question = new Question();
             @SuppressWarnings("unused")
-            QuestionTab qt = new QuestionTab("NewQ", this, tabbedPane,
-                                                  question, questionSet, qsName);
+            QuestionTab qt = new QuestionTab("NewQ", this, tabbedPane, question);
         
          }catch (Exception e){}
     }
@@ -610,8 +613,7 @@ public class QuestionSetTab implements ActionListener{
             }
             
             @SuppressWarnings("unused")
-            QuestionTab qt = new QuestionTab("EditQ", this, tabbedPane, 
-                                                    question, questionSet, qsName);
+            QuestionTab qt = new QuestionTab("EditQ", this, tabbedPane, question);
             
         }catch (Exception e) {
             e.printStackTrace();
@@ -629,7 +631,7 @@ public class QuestionSetTab implements ActionListener{
         /*   
             The appplication's user can not review his/her question 
          */
-    
+        System.out.println("Autor:" + getAuthor());
         if(getAuthorTagValue(question).equals(getAuthor())) {
            JOptionPane.showMessageDialog(mainPanel,
                    "You can not review your question!", 
@@ -639,8 +641,7 @@ public class QuestionSetTab implements ActionListener{
         }
         
         @SuppressWarnings("unused")
-        ReviewQuestionTab rqTab = new ReviewQuestionTab(this, tabbedPane, 
-                                            question, questionSet);
+        ReviewQuestionTab rqTab = new ReviewQuestionTab(this, tabbedPane, question);
         
         
     }
@@ -667,6 +668,26 @@ public class QuestionSetTab implements ActionListener{
         
         questionSet.remove(question);
         updateQuestionsList("DEL", question);
+    }
+    
+    private void viewReviews() {
+        int index = questionsList.getSelectedIndex();
+        if(index < 0) return;
+        Question question = questions.elementAt(index);
+        Vector <Review> reviews = (Vector<Review>)question.getReviews();
+        if(reviews.size() > 0) {
+            System.out.println("Review:");
+            System.out.println(reviews.elementAt(0).getAuthor());
+            System.out.println(reviews.elementAt(0).getDate());
+            System.out.println(reviews.elementAt(0).getComment());
+            
+            @SuppressWarnings("unused")
+            ReviewsTab rTab = new ReviewsTab(question, tabbedPane);
+            tabbedPane.add(" Reviews ", rTab);
+            int tabIndex = tabbedPane.getTabCount() -1;
+            tabbedPane.setSelectedIndex(tabIndex);
+        }
+        
     }
     /**
      * Makes a new listModel in which it adds the filtering results

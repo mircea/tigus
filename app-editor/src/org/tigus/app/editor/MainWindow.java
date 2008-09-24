@@ -42,7 +42,7 @@ public class MainWindow implements ActionListener {
     PreferencesWindow preferencesWindow;
     
     /*file names     */
-    final String configFile = "configFile";
+    final String configFile = "editor.conf";
     final String wordsFile = "filterwords.txt";
      
     
@@ -229,6 +229,7 @@ public class MainWindow implements ActionListener {
                 }
                     
                 String name = s.substring(beginIndex, endIndex).trim();
+             
                 return name;
             }
         }catch(Exception ex) {
@@ -413,7 +414,7 @@ public class MainWindow implements ActionListener {
     private void saveFilterWords() {
        if(empty)
            return;
-       Vector <String> words= qsTab.getFileringWords();
+       Vector <String> words= qsTab.getFilteringWords();
        try {
            RandomAccessFile raf = new RandomAccessFile(wordsFile, "rw");
           // raf.seek(raf.length());

@@ -80,14 +80,13 @@ public class QuestionTab {
      */ 
  
     
-    public QuestionTab(String op, QuestionSetTab qsTab, JTabbedPane pane, Question question , 
-                            QuestionSet qs, String qsName) {
+    public QuestionTab(String op, QuestionSetTab qsTab, JTabbedPane pane, Question question) {
         this.qsTab = qsTab;
         this.tabbedPane = pane;   
         this.question = question;
         oldQuestion = question;
-        this.questionSet = qs;
-        this.qsName = qsName;
+        this.questionSet = qsTab.getQuestionSet();
+        this.qsName = qsTab.getQuestionSetName();
         this.op = op;
         isCorrect = false; 
         state = "ADD"; 

@@ -28,6 +28,7 @@ public class ReviewQuestionTab {
     int listIndex;
     int tabIndex;
     int correctCount;
+    Boolean isModified; // true if the question was modified
     Boolean isCorrect;
     String state;
     
@@ -82,18 +83,18 @@ public class ReviewQuestionTab {
      */ 
  
     
-    public ReviewQuestionTab(QuestionSetTab qsTab, JTabbedPane pane, Question question , 
-                            QuestionSet qs) {
+    public ReviewQuestionTab(QuestionSetTab qsTab, JTabbedPane pane, Question question) {
         this.qsTab = qsTab;
         this.tabbedPane = pane;   
         this.question = question;
-        oldQuestion = new Question(question);
-        this.questionSet = qs;     
+        this.oldQuestion = new Question(question);
+        this.questionSet = qsTab.getQuestionSet();     
    
-        isCorrect = false; 
-        state = "ADD"; 
-        correctCount = 0;
-        comment = " ";
+        this.isModified = false;
+        this.isCorrect = false; 
+        this.state = "ADD"; 
+        this.correctCount = 0;
+        this.comment = " ";
         initComponents();
     }
     
@@ -464,12 +465,15 @@ public class ReviewQuestionTab {
                
                String answerText = answerTextArea.getText();
                
-               if (answerText.length() == 0) {
+               if (!state.equals("REVIEW") && answerText.length() == 0) {
                    JOptionPane.showMessageDialog(mainPanel,
                            "The answer's text is empty!", 
                                "", JOptionPane.ERROR_MESSAGE);
                    return;
                }
+               
+               if(!isModified)
+                       isModified = true;
                
                if (isCorrect) {
                    System.out.println("correct count before ++ = " + correctCount);
@@ -548,7 +552,11 @@ public class ReviewQuestionTab {
                    
                     if (value == JOptionPane.NO_OPTION) {
                         return;
-                    }                     
+                    }   
+                    
+                    if(!isModified)
+                        isModified = true;
+                    
                     comboBoxModel.removeElement(tagName);                    
                 }
                 
@@ -580,7 +588,8 @@ public class ReviewQuestionTab {
                 if (value == JOptionPane.NO_OPTION) {
                     return;
                 } 
-                
+                if(!isModified)
+                    isModified = true;
                 tagSet.remove(tagName);
                 comboBoxModel.removeElement(tagName);
             }
@@ -602,14 +611,21 @@ public class ReviewQuestionTab {
                                "warning", JOptionPane.WARNING_MESSAGE);
                }
                
-               question.setText(questionText);
+               if(!questionText.equals(question.getText())) {
+                   if(!isModified)
+                       isModified = true;
+                   question.setText(questionText);
+               }
                
-               Review review = new Review(new Date(), qsTab.getAuthor(), 
-                                           comment, oldQuestion, question);
+               if(isModified) {
                
-               question.addReview(review);
-               
-               qsTab.updateQuestionsList("EDIT", question);
+                   Review review = new Review(new Date(), qsTab.getAuthor(), 
+                                               comment, oldQuestion, question);
+                   
+                   question.addReview(review);
+                   
+                   qsTab.updateQuestionsList("EDIT", question);
+               }
                
                tabbedPane.removeTabAt(tabIndex);
                
