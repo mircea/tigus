@@ -68,6 +68,8 @@ public class PlainTextQuestionConverter {
                  */
                 if (((state == TAGSTATE) || (state == NOQUESTIONSTATE))
                         && line.startsWith("@")) {
+                    state = TAGSTATE;
+
                     parseTags(line);
                 }
 
@@ -81,6 +83,7 @@ public class PlainTextQuestionConverter {
                         && (!line.startsWith("@")) && (!line.startsWith("+"))
                         && (!line.startsWith("-"))) {
                     state = QUESTIONTEXTSTATE;
+
                     parseQuestionText(line);
                 }
 
@@ -92,6 +95,7 @@ public class PlainTextQuestionConverter {
                 if (((state == QUESTIONTEXTSTATE) || (state == ANSWERSTATE))
                         && (line.startsWith("+") || line.startsWith("-"))) {
                     state = ANSWERSTATE;
+
                     parseAnswer(line);
                 }
 
@@ -103,29 +107,32 @@ public class PlainTextQuestionConverter {
                 if ((state == ANSWERSTATE) && (line.trim().length() == 0)) {
                     state = NOQUESTIONSTATE;
 
-                    printQuestion();
+                    /*
+                     * debug purposes: (uncomment next line)
+                     */
+                    // printQuestion();
                     qSet.add(q);
                     q = new Question();
                 }
 
                 if ((state == ANSWERSTATE) && (line.trim().length() != 0)
                         && !(line.startsWith("+") || line.startsWith("-"))) {
-                    System.out.println("EXCEPTION: thereis a line not "
-                            + "starting with + or - in the answers");
-                    return;
+                    throw new Exception(
+                            "there is a line not starting with + or - in the answers");
                 }
 
                 if ((state == NOQUESTIONSTATE) && (line.trim().length() != 0)
                         && !(line.startsWith("@"))) {
-                    System.out.println("EXCEPTION: the new question does "
-                            + "not begin with @ marker");
-                    return;
+                    throw new Exception(
+                            "the new question does not begin with @ marker");
                 }
             }
 
         } catch (FileNotFoundException e) {
             e.printStackTrace();
         } catch (IOException e) {
+            e.printStackTrace();
+        } catch (Exception e) {
             e.printStackTrace();
         }
 
@@ -135,6 +142,55 @@ public class PlainTextQuestionConverter {
         return qSet;
     }
 
+    private void parseAnswer(String line) {
+
+        // we add the answer according to its true/false value
+        if (line.charAt(0) == '+') {
+            q.addAnswer(true, line.substring(1));
+        }
+        if (line.charAt(0) == '-') {
+            q.addAnswer(false, line.substring(1));
+        }
+    }
+
+    private void parseQuestionText(String line) {
+
+        // if this is the first line we just add it otherwise we concatenate it
+        if (q.getText().isEmpty()) {
+            q.setText(line);
+        } else {
+            q.setText(q.getText().concat("\n"));
+            q.setText(q.getText().concat(line));
+        }
+    }
+
+    private void parseTags(String line) {
+        String tagName;
+
+        // we delete the @ character marking the tag line
+        line = line.substring(1);
+
+        // we identify the tag name
+        int i = 0;
+        while (line.charAt(i) != ' ') {
+            i++;
+        }
+
+        // we extract the tag name
+        tagName = new String();
+        tagName = line.substring(0, i);
+
+        // we extract the tag attributes
+        line = line.substring(i + 1);
+
+        // we add the tag name and the tag attributes in the List form
+        q.setTagValueList(tagName, line);
+    }
+
+    /*
+     * for debug purposes only:
+     */
+    @SuppressWarnings("unused")
     private void printQuestion() {
         // question printing function for debug purposes only
 
@@ -171,51 +227,5 @@ public class PlainTextQuestionConverter {
                 System.out.print("Incorrect:" + ans.getText() + "\n");
             }
         }
-    }
-
-    private void parseAnswer(String line) {
-
-        // we add the answer according to its true/false value
-        if (line.charAt(0) == '+') {
-            q.addAnswer(true, line.substring(1));
-        }
-        if (line.charAt(0) == '-') {
-            q.addAnswer(false, line.substring(1));
-        }
-    }
-
-    private void parseQuestionText(String line) {
-
-        // if this is the first line we just add it otherwise we concatenate it
-        if (q.getText().isEmpty()) {
-            q.setText(line);
-        } else {
-            q.setText(q.getText().concat("\n"));
-            q.setText(q.getText().concat(line));
-        }
-    }
-
-    private void parseTags(String line) {
-        // TODO Auto-generated method stub
-        String tagName;
-
-        // we delete the @ character marking the tag line
-        line = line.substring(1);
-
-        // we identify the tag name
-        int i = 0;
-        while (line.charAt(i) != ' ') {
-            i++;
-        }
-
-        // we extract the tag name
-        tagName = new String();
-        tagName = line.substring(0, i);
-
-        // we extract the tag attributes
-        line = line.substring(i + 1);
-
-        // we add the tag name and the tag attributes in the List form
-        q.setTagValueList(tagName, line);
     }
 }
