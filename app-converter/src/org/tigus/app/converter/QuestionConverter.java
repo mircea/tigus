@@ -18,9 +18,6 @@ public class QuestionConverter {
         plain = new PlainTextQuestionConverter(args[0]);
 
         plain.parseFile();
-
-        System.out.println("\n\ndone");
-
     }
 
 }
